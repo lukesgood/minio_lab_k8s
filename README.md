@@ -1,5 +1,41 @@
 # MinIO Kubernetes Lab Guide
 
+## 📚 실습 가이드 문서
+
+### 빠른 시작
+- **[QUICKSTART.md](QUICKSTART.md)** - 원클릭 설치 및 빠른 시작 가이드
+- **[setup-environment.sh](setup-environment.sh)** - 자동화된 환경 구성 스크립트
+
+### 상세 가이드
+- **[lab-setup-guide.md](lab-setup-guide.md)** - 단계별 환경 구성 가이드
+- **[performance-comparison.md](performance-comparison.md)** - MinIO vs GlusterFS 비교
+- **[troubleshooting-guide.md](troubleshooting-guide.md)** - 문제 해결 가이드
+
+### 실습 스크립트
+- **[run-lab.sh](run-lab.sh)** - 실습 메뉴 스크립트
+- **개별 실습 스크립트들** - 각 Lab별 자동화 스크립트
+
+## 🚀 빠른 시작
+
+### 원클릭 설치
+```bash
+# 1. 리포지토리 클론
+git clone https://github.com/lukesgood/minio_lab_k8s.git
+cd minio_lab_k8s
+
+# 2. 자동 환경 구성
+chmod +x setup-environment.sh
+./setup-environment.sh
+
+# 3. kubectl 설정
+export KUBECONFIG=~/.kube/config-minio
+
+# 4. 실습 시작
+./run-lab.sh
+```
+
+**⏱️ 예상 소요시간: 30-45분**
+
 ## 실습 환경
 - Multipass Ubuntu VMs
 - Kubernetes 클러스터
