@@ -1,0 +1,76 @@
+---
+# Prometheus ServiceMonitor for MinIO
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: minio-metrics
+  namespace: minio-tenant
+spec:
+  selector:
+    matchLabels:
+      app: minio
+  endpoints:
+  - port: http-minio
+    path: /minio/v2/metrics/cluster
+    interval: 30s
+
+---
+# MinIO 메트릭 서비스
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-metrics
+  namespace: minio-tenant
+  labels:
+    app: minio
+spec:
+  ports:
+  - name: http-minio
+    port: 9000
+    targetPort: 9000
+  selector:
+    app: minio
+
+---
+# Grafana Dashboard ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: minio-dashboard
+  namespace: monitoring
+data:
+  minio-dashboard.json: |
+    {
+      "dashboard": {
+        "title": "MinIO Dashboard",
+        "panels": [
+          {
+            "title": "Total Storage",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "minio_cluster_capacity_usable_total_bytes"
+              }
+            ]
+          },
+          {
+            "title": "Used Storage",
+            "type": "stat", 
+            "targets": [
+              {
+                "expr": "minio_cluster_capacity_usable_free_bytes"
+              }
+            ]
+          },
+          {
+            "title": "Request Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(minio_http_requests_duration_seconds_count[5m])"
+              }
+            ]
+          }
+        ]
+      }
+    }

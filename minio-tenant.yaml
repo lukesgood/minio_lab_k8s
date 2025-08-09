@@ -1,0 +1,60 @@
+apiVersion: minio.min.io/v2
+kind: Tenant
+metadata:
+  name: minio-tenant
+  namespace: minio-tenant
+spec:
+  # MinIO 이미지
+  image: minio/minio:RELEASE.2024-01-16T16-07-38Z
+  
+  # 서버 풀 구성
+  pools:
+  - servers: 4                    # 서버 수
+    name: pool-0
+    volumesPerServer: 2           # 서버당 볼륨 수
+    volumeClaimTemplate:
+      metadata:
+        name: data
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi         # 볼륨 크기
+        storageClassName: standard
+    
+    # 리소스 할당
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+  
+  # 서비스 설정
+  requestAutoCert: false
+  
+  # 사용자 인증 정보
+  users:
+  - name: minio-user
+  
+  # 설정
+  configuration:
+    name: minio-config
+  
+  # 모니터링
+  prometheusOperator: false
+  
+  # 로그 검색
+  log:
+    disabled: true
+  
+  # 콘솔 설정
+  console:
+    image: minio/console:v0.22.5
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
