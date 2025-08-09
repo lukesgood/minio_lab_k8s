@@ -11,6 +11,40 @@
 - 사용자 및 권한 관리 시스템 이해
 - 실제 운영 환경에서의 문제 해결 능력 습득
 
+## 🔧 사전 준비: Kubernetes 환경 구성
+
+### Kubernetes 클러스터가 없는 경우
+
+MinIO Lab을 시작하기 전에 Kubernetes 클러스터가 필요합니다. 다음 방법 중 하나를 선택하세요:
+
+#### 자동 설치 (권장)
+```bash
+# Kubernetes 환경 구성 자동화 스크립트
+./setup-k8s-environment.sh
+
+# 메뉴에서 선택:
+# 1) Minikube (가장 간단)
+# 2) Kind (Docker 기반)
+# 3) K3s (경량 프로덕션급)
+# 4) kubeadm (표준 클러스터)
+# 5) 기존 클러스터 확인
+```
+
+#### 수동 설치
+- **Minikube**: `minikube start --cpus=4 --memory=8192`
+- **Kind**: `kind create cluster --name=minio-lab`
+- **K3s**: `curl -sfL https://get.k3s.io | sh -`
+
+**📖 상세 가이드**: [K8S_SETUP_GUIDE.md](K8S_SETUP_GUIDE.md)
+
+### Kubernetes 클러스터가 있는 경우
+
+기존 클러스터 확인:
+```bash
+kubectl cluster-info
+kubectl get nodes
+```
+
 ## 🚀 빠른 시작
 
 ### 자동 환경 감지 및 설정 (권장)
@@ -19,13 +53,16 @@
 git clone https://github.com/lukesgood/minio_lab_k8s.git
 cd minio_lab_k8s
 
-# 2. 환경 자동 감지
+# 2. Kubernetes 환경 구성 (필요한 경우)
+./setup-k8s-environment.sh
+
+# 3. 환경 자동 감지
 ./detect-environment.sh
 
-# 3. 환경 자동 설정
+# 4. 환경 자동 설정
 ./setup-environment.sh
 
-# 4. 실습 시작
+# 5. 실습 시작
 ./run-lab.sh
 ```
 
