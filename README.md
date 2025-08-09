@@ -22,7 +22,7 @@ cd minio_lab_k8s
 # 2. 환경 자동 감지
 ./detect-environment.sh
 
-# 3. 환경별 자동 설정
+# 3. 환경 자동 설정
 ./setup-environment.sh
 
 # 4. 실습 시작
@@ -31,11 +31,12 @@ cd minio_lab_k8s
 
 ### 수동 환경 선택 (고급 사용자)
 ```bash
-# 단일 노드 환경
-./setup-single-node.sh && ./run-single-node-lab.sh
+# 환경 감지 후 수동 설정
+./detect-environment.sh
+./setup-environment.sh
 
-# 다중 노드 환경  
-./setup-multi-node.sh && ./run-multi-node-lab.sh
+# 실습 메뉴에서 원하는 모듈 선택
+./run-lab.sh
 ```
 
 **⏱️ 예상 소요시간: 60-90분**
@@ -244,24 +245,28 @@ time mc cp test-*.dat local/test-bucket/
 ./setup-environment.sh
 ```
 
-### 2. 단계별 실습
+### 2. 실습 실행
 ```bash
-# 실습 메뉴 실행
+# 인터랙티브 실습 메뉴 실행
 ./run-lab.sh
 
-# 또는 개별 실습 실행
-./lab-01-operator-install.sh
-./lab-02-tenant-deploy.sh
-./lab-03-client-setup.sh
-# ... 계속
+# 메뉴에서 원하는 Lab 선택:
+# 0: 환경 사전 검증
+# 1: MinIO Operator 설치  
+# 2: MinIO Tenant 배포
+# 3: MinIO Client 및 기본 사용법
+# 4: S3 API 고급 기능
+# 5: 성능 테스트
+# 6: 사용자 및 권한 관리
 ```
 
 ### 3. 실습 완료 후 정리
 ```bash
-# 전체 환경 정리
+# run-lab.sh 메뉴에서 '9' 선택하여 전체 정리
+# 또는 전용 정리 스크립트 실행:
 ./cleanup-all.sh
 
-# 또는 선택적 정리
+# 또는 수동 정리:
 kubectl delete namespace minio-tenant
 kubectl delete namespace minio-operator
 ```
