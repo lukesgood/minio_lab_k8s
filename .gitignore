@@ -1,0 +1,50 @@
+# 임시 파일들
+*.tmp
+*.temp
+*.dat
+*.txt
+*.json
+
+# 환경 설정 파일들
+.environment-info
+.lab-config
+
+# MinIO Client 바이너리
+mc
+
+# 로그 파일들
+*.log
+
+# 백업 파일들
+*.bak
+*.backup
+
+# OS 생성 파일들
+.DS_Store
+Thumbs.db
+
+# IDE 파일들
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 테스트 데이터
+test-*
+downloaded-*
+multi-*
+concurrent-*
+perf-*
+large-*
+metadata-*
+storage-class-*
+version-*
+write-*
+user-test-*
+
+# 정책 파일들 (실습 중 생성)
+readonly-policy.json
+readwrite-policy.json
+
+# Kubernetes 임시 파일들
+temp-*.yaml
