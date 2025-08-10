@@ -55,24 +55,129 @@ wait_for_user() {
     read
 }
 
+install_minio_client() {
+    echo -e "${CYAN}🔧 MinIO Client 자동 설치${NC}"
+    echo ""
+    
+    echo "MinIO Client 다운로드 중..."
+    if curl -O https://dl.min.io/client/mc/release/linux-amd64/mc; then
+        print_success "MinIO Client 다운로드 완료"
+        
+        echo "실행 권한 부여 중..."
+        chmod +x mc
+        
+        echo "PATH에 추가 중..."
+        if sudo mv mc /usr/local/bin/ 2>/dev/null; then
+            print_success "MinIO Client를 /usr/local/bin/에 설치했습니다"
+        elif mv mc ~/bin/ 2>/dev/null; then
+            print_success "MinIO Client를 ~/bin/에 설치했습니다"
+            export PATH=$PATH:~/bin
+        else
+            print_warning "시스템 경로에 추가할 수 없습니다"
+            echo "현재 디렉토리에서 ./mc로 실행하거나 PATH를 수동으로 설정하세요."
+            export PATH=$PATH:$(pwd)
+        fi
+        
+        echo ""
+        echo "설치 확인:"
+        mc --version
+        return 0
+    else
+        print_error "MinIO Client 다운로드 실패"
+        echo ""
+        echo -e "${YELLOW}해결 방법:${NC}"
+        echo "1. 네트워크 연결 확인"
+        echo "2. 방화벽 설정 확인"
+        echo "3. 수동 다운로드: https://dl.min.io/client/mc/release/linux-amd64/mc"
+        return 1
+    fi
+}
+
 check_prerequisites() {
     echo -e "${BLUE}📋 사전 요구사항 확인${NC}"
     echo ""
     
-    # MinIO Client 확인
+    # MinIO Client 확인 및 자동 설치
     if ! command -v mc &> /dev/null; then
-        print_error "MinIO Client가 설치되어 있지 않습니다"
-        echo "Lab 3을 먼저 완료해주세요."
-        exit 1
+        print_warning "MinIO Client가 설치되어 있지 않습니다"
+        echo ""
+        echo "자동으로 MinIO Client를 설치하시겠습니까? (y/n)"
+        read -p "선택: " install_choice
+        
+        if [[ $install_choice =~ ^[Yy]$ ]]; then
+            if ! install_minio_client; then
+                print_error "MinIO Client 설치 실패"
+                echo "Lab 3을 먼저 완료하거나 수동으로 설치해주세요."
+                exit 1
+            fi
+        else
+            print_error "MinIO Client가 필요합니다"
+            echo "Lab 3을 먼저 완료해주세요."
+            exit 1
+        fi
+    else
+        print_success "MinIO Client 확인됨"
+        mc --version
     fi
+    
+    echo ""
     
     # MinIO 서버 연결 확인
+    echo "MinIO 서버 연결 확인 중..."
     if ! mc admin info local &> /dev/null; then
-        print_error "MinIO 서버에 연결할 수 없습니다"
-        echo "Lab 3의 포트 포워딩과 서버 연결을 확인해주세요."
-        exit 1
+        print_warning "MinIO 서버에 연결할 수 없습니다"
+        echo ""
+        echo "서버 연결을 설정하시겠습니까? (y/n)"
+        read -p "선택: " setup_choice
+        
+        if [[ $setup_choice =~ ^[Yy]$ ]]; then
+            echo ""
+            echo "MinIO 서버 연결 설정:"
+            echo "기본값: http://localhost:9000, admin, password123"
+            echo ""
+            
+            read -p "MinIO URL [http://localhost:9000]: " minio_url
+            minio_url=${minio_url:-http://localhost:9000}
+            
+            read -p "사용자명 [admin]: " username
+            username=${username:-admin}
+            
+            read -s -p "비밀번호 [password123]: " password
+            password=${password:-password123}
+            echo ""
+            
+            echo ""
+            echo "연결 설정 중..."
+            if mc alias set local $minio_url $username $password; then
+                print_success "MinIO 서버 연결 설정 완료"
+                
+                echo ""
+                echo "연결 테스트 중..."
+                if mc admin info local &> /dev/null; then
+                    print_success "MinIO 서버 연결 확인됨"
+                else
+                    print_error "MinIO 서버 연결 실패"
+                    echo ""
+                    echo -e "${YELLOW}해결 방법:${NC}"
+                    echo "1. MinIO 서버가 실행 중인지 확인"
+                    echo "2. 포트 포워딩 설정 확인: kubectl port-forward svc/minio -n minio-tenant 9000:80"
+                    echo "3. 인증 정보 확인"
+                    exit 1
+                fi
+            else
+                print_error "MinIO 서버 연결 설정 실패"
+                exit 1
+            fi
+        else
+            print_error "MinIO 서버 연결이 필요합니다"
+            echo "Lab 3의 포트 포워딩과 서버 연결을 확인해주세요."
+            exit 1
+        fi
+    else
+        print_success "MinIO 서버 연결 확인됨"
     fi
     
+    echo ""
     print_success "사전 요구사항 확인 완료"
     echo ""
 }
