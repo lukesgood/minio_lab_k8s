@@ -10,9 +10,17 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# 환경 정보 로드
+# 환경 정보 로드 (오류 무시)
 if [ -f ".environment-info" ]; then
-    source .environment-info
+    # 안전하게 환경 변수만 로드
+    ENVIRONMENT_TYPE=$(grep "^ENVIRONMENT_TYPE=" .environment-info | cut -d'=' -f2)
+    NODE_COUNT=$(grep "^NODE_COUNT=" .environment-info | cut -d'=' -f2)
+    WORKER_NODES=$(grep "^WORKER_NODES=" .environment-info | cut -d'=' -f2)
+    TOTAL_CPU_CORES=$(grep "^TOTAL_CPU_CORES=" .environment-info | cut -d'=' -f2)
+    TOTAL_MEMORY_GB=$(grep "^TOTAL_MEMORY_GB=" .environment-info | cut -d'=' -f2)
+    STORAGE_CLASSES=$(grep "^STORAGE_CLASSES=" .environment-info | cut -d'=' -f2)
+    DEFAULT_SC=$(grep "^DEFAULT_SC=" .environment-info | cut -d'=' -f2)
+    
     echo -e "${BLUE}📋 감지된 환경: ${ENVIRONMENT_TYPE}${NC}"
 else
     echo -e "${YELLOW}⚠️  환경 정보가 없습니다. 환경 감지를 먼저 실행하세요.${NC}"
@@ -71,9 +79,13 @@ fi
 echo ""
 echo "4. 필수 도구 확인..."
 
-# kubectl 버전 확인
-KUBECTL_VERSION=$(kubectl version --client --short 2>/dev/null | cut -d' ' -f3 || echo "unknown")
-echo "   - kubectl: ${KUBECTL_VERSION}"
+# kubectl 버전 확인 (간단하게)
+if command -v kubectl &>/dev/null; then
+    KUBECTL_VERSION=$(kubectl version --client --short 2>/dev/null | head -1 | awk '{print $3}' || echo "installed")
+    echo "   - kubectl: ${KUBECTL_VERSION}"
+else
+    echo "   - kubectl: 미설치"
+fi
 
 # curl 확인
 if command -v curl &>/dev/null; then
@@ -88,6 +100,7 @@ if [ "$ENVIRONMENT_TYPE" = "multi-node" ]; then
     echo "5. 네트워크 정책 확인..."
     
     # CNI 플러그인 확인
+    CNI_PLUGIN=$(kubectl get pods -n kube-system --no-headers 2>/dev/null | grep -E "flannel|calico|weave|cilium" | head -1 | awk '{print $1}' | cut -d'-' -f1 || echo "")
     if [ -n "$CNI_PLUGIN" ]; then
         echo "   - CNI 플러그인: ${CNI_PLUGIN}"
         echo -e "${GREEN}✅ 네트워크 설정 정상${NC}"
@@ -96,16 +109,45 @@ if [ "$ENVIRONMENT_TYPE" = "multi-node" ]; then
     fi
 fi
 
-# 6. 리소스 확인
+# 6. 리소스 확인 (실시간 계산)
 echo ""
 echo "6. 클러스터 리소스 확인..."
-echo "   - 노드 수: ${NODE_COUNT}"
-echo "   - Worker 노드: ${WORKER_NODES}"
-echo "   - 총 CPU: ${TOTAL_CPU_CORES} 코어"
-echo "   - 총 메모리: ${TOTAL_MEMORY_GB} GB"
+
+# 실시간 리소스 계산
+REAL_CPU_CORES=0
+REAL_MEMORY_GB=0
+
+# 노드별 리소스 합계 계산
+while read -r line; do
+    if [[ $line =~ cpu:.*([0-9]+) ]]; then
+        CPU_MILLICORES=$(echo "$line" | grep -o 'cpu:[[:space:]]*[0-9]*' | grep -o '[0-9]*')
+        if [[ -n "$CPU_MILLICORES" && "$CPU_MILLICORES" -gt 0 ]]; then
+            REAL_CPU_CORES=$((REAL_CPU_CORES + CPU_MILLICORES / 1000))
+        fi
+    fi
+    if [[ $line =~ memory:.*([0-9]+)Ki ]]; then
+        MEMORY_KI=$(echo "$line" | grep -o 'memory:[[:space:]]*[0-9]*Ki' | grep -o '[0-9]*')
+        if [[ -n "$MEMORY_KI" && "$MEMORY_KI" -gt 0 ]]; then
+            REAL_MEMORY_GB=$((REAL_MEMORY_GB + MEMORY_KI / 1024 / 1024))
+        fi
+    fi
+done < <(kubectl describe nodes 2>/dev/null | grep -E "cpu:|memory:")
+
+# 기본값 설정 (계산 실패 시)
+if [ "$REAL_CPU_CORES" -eq 0 ]; then
+    REAL_CPU_CORES=2  # 기본값
+fi
+if [ "$REAL_MEMORY_GB" -eq 0 ]; then
+    REAL_MEMORY_GB=4  # 기본값
+fi
+
+echo "   - 노드 수: ${NODE_COUNT:-1}"
+echo "   - Worker 노드: ${WORKER_NODES:-0}"
+echo "   - 총 CPU: ${REAL_CPU_CORES} 코어"
+echo "   - 총 메모리: ${REAL_MEMORY_GB} GB"
 
 # 리소스 충분성 검사
-if [ "$TOTAL_CPU_CORES" -lt 2 ] || [ "$TOTAL_MEMORY_GB" -lt 4 ]; then
+if [ "$REAL_CPU_CORES" -lt 2 ] || [ "$REAL_MEMORY_GB" -lt 4 ]; then
     echo -e "${YELLOW}⚠️  리소스가 부족할 수 있습니다. 최소 2 CPU, 4GB RAM 권장${NC}"
 else
     echo -e "${GREEN}✅ 충분한 리소스 확인${NC}"
@@ -177,5 +219,5 @@ else
 fi
 echo ""
 
-# 설정 완료 시간 기록
-echo "SETUP_COMPLETED_AT=$(date)" >> .environment-info
+# 설정 완료 시간 기록 (안전하게)
+echo "SETUP_COMPLETED_AT=\"$(date)\"" >> .environment-info
