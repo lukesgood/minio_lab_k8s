@@ -363,6 +363,12 @@ kubectl delete namespace minio-operator
 
 ## 📖 추가 리소스
 
+### 핵심 개념 상세 가이드
+- [Lab 0 핵심 개념: 동적 프로비저닝과 스토리지 클래스](docs/LAB-00-CONCEPTS.md)
+- [Lab 1 핵심 개념: Kubernetes Operator 패턴과 CRD](docs/LAB-01-CONCEPTS.md)
+- [Lab 2 핵심 개념: MinIO Tenant와 실시간 프로비저닝](docs/LAB-02-CONCEPTS.md)
+- [Lab 3 핵심 개념: S3 API와 데이터 무결성 검증](docs/LAB-03-CONCEPTS.md)
+
 ### 공식 문서
 - [MinIO 공식 문서](https://docs.min.io/)
 - [MinIO Operator GitHub](https://github.com/minio/operator)
@@ -372,7 +378,7 @@ kubectl delete namespace minio-operator
 - [단일 노드 환경 가이드](SINGLE_NODE_GUIDE.md)
 - [다중 노드 환경 가이드](MULTI_NODE_GUIDE.md)
 - [환경 선택 가이드](SELECT_ENVIRONMENT.md)
-- [트러블슈팅 가이드](troubleshooting-guide.md)
+- [Kubernetes 환경 구성](K8S_SETUP_GUIDE.md)
 
 ### 커뮤니티
 - [MinIO Slack](https://slack.min.io/)
