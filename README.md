@@ -156,12 +156,14 @@ cd minio_lab_k8s
 - Prometheus 메트릭 수집
 - Grafana 대시보드 구성
 - 알림 규칙 설정
-- **스크립트**: `./lab-07-monitoring.sh` (개발 예정)
+- **소요시간**: 15-20분
+- **스크립트**: `./lab-07-monitoring.sh`
 
 #### Lab 8: Helm Chart 실습 (대안 방법)
 - 전통적인 Helm 배포 방식
 - Operator vs Helm 비교
-- **스크립트**: `./lab-08-helm-chart.sh` (개발 예정)
+- **소요시간**: 15-20분
+- **스크립트**: `./lab-08-helm-chart.sh`
 
 ## 🎓 학습 성과 및 핵심 개념
 
@@ -368,6 +370,8 @@ kubectl delete namespace minio-operator
 - [Lab 1 핵심 개념: Kubernetes Operator 패턴과 CRD](docs/LAB-01-CONCEPTS.md)
 - [Lab 2 핵심 개념: MinIO Tenant와 실시간 프로비저닝](docs/LAB-02-CONCEPTS.md)
 - [Lab 3 핵심 개념: S3 API와 데이터 무결성 검증](docs/LAB-03-CONCEPTS.md)
+- [Lab 7 핵심 개념: Prometheus 모니터링과 Grafana 시각화](docs/LAB-07-CONCEPTS.md)
+- [Lab 8 핵심 개념: Helm Chart 배포와 Operator 비교](docs/LAB-08-CONCEPTS.md)
 
 ### 공식 문서
 - [MinIO 공식 문서](https://docs.min.io/)

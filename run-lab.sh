@@ -399,12 +399,12 @@ while true; do
             lab_6_user_management
             ;;
         7)
-            echo -e "${YELLOW}Lab 7: 모니터링 설정은 현재 개발 중입니다.${NC}"
-            read -p "계속하려면 Enter를 누르세요..."
+            echo "Lab 7: 모니터링 설정 실행 중..."
+            ./lab-07-monitoring.sh
             ;;
         8)
-            echo -e "${YELLOW}Lab 8: Helm Chart 실습은 현재 개발 중입니다.${NC}"
-            read -p "계속하려면 Enter를 누르세요..."
+            echo "Lab 8: Helm Chart 실습 실행 중..."
+            ./lab-08-helm-chart.sh
             ;;
         9)
             cleanup_all
