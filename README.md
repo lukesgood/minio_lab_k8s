@@ -82,7 +82,7 @@ cd minio_lab_k8s
 ./run-lab.sh
 ```
 
-**⏱️ 예상 소요시간: 60-90분**
+**⏱️ 예상 소요시간: 90-120분 (전체 실습 기준)**
 
 ## 📋 환경 요구사항
 
@@ -195,6 +195,9 @@ cd minio_lab_k8s
 - **StatefulSet**: 상태 유지 애플리케이션을 위한 Kubernetes 리소스
 - **MinIO Operator**: Kubernetes 네이티브 방식의 MinIO 관리
 - **Erasure Coding**: 데이터 보호 및 효율성을 위한 MinIO의 핵심 기술
+- **백업 전략**: 복사, 동기화, 증분 백업의 차이점과 활용법
+- **버전 관리**: 객체의 변경 히스토리 추적 및 복구 메커니즘
+- **재해 복구**: 체계적인 데이터 복구 절차와 비즈니스 연속성
 
 ### 🛠️ 실무 기술
 - **Kubernetes 리소스 관리**: 네임스페이스, 시크릿, 서비스 등
@@ -202,6 +205,9 @@ cd minio_lab_k8s
 - **MinIO 관리**: 사용자 생성, 정책 설정, 성능 최적화
 - **포트 포워딩**: 클러스터 내부 서비스에 안전한 접근
 - **데이터 검증**: 무결성 확인, 실제 저장 위치 확인
+- **백업 자동화**: 스크립트 기반 백업 시스템 구축
+- **재해 복구**: 데이터 손실 시나리오 대응 및 복구 절차
+- **버전 관리**: 객체 버전 추적 및 이전 버전 복구
 
 ### 🔍 실제 환경 이해
 - **PV가 "none"으로 표시되는 이유**: 동적 프로비저닝의 정상 동작
@@ -356,6 +362,10 @@ time mc cp test-*.dat local/test-bucket/
 # 4: S3 API 고급 기능
 # 5: 성능 테스트
 # 6: 사용자 및 권한 관리
+# 7: 모니터링 설정 (선택)
+# 8: Helm Chart 실습 (선택)
+# 9: 정적 웹사이트 호스팅 (선택)
+# 10: 백업 및 재해 복구 (선택)
 ```
 
 #### 개별 스크립트 실행 방식
@@ -369,14 +379,21 @@ time mc cp test-*.dat local/test-bucket/
 ./lab-05-performance-test.sh
 ./lab-06-user-management.sh
 
+# 선택적 고급 실습
+./lab-07-monitoring.sh
+./lab-08-helm-chart.sh
+./lab-09-static-website.sh
+./lab-10-backup-recovery.sh
+
 # 또는 필요한 Lab만 선택적으로 실행
 ./lab-03-client-setup.sh  # MinIO Client 설정만
 ./lab-05-performance-test.sh  # 성능 테스트만
+./lab-10-backup-recovery.sh  # 백업 및 재해 복구만
 ```
 
 ### 3. 실습 완료 후 정리
 ```bash
-# run-lab.sh 메뉴에서 '9' 선택하여 전체 정리
+# run-lab.sh 메뉴에서 '11' 선택하여 전체 정리
 # 또는 전용 정리 스크립트 실행:
 ./cleanup-all.sh
 
@@ -394,6 +411,8 @@ kubectl delete namespace minio-operator
 - [Lab 3 핵심 개념: S3 API와 데이터 무결성 검증](docs/LAB-03-CONCEPTS.md)
 - [Lab 7 핵심 개념: Prometheus 모니터링과 Grafana 시각화](docs/LAB-07-CONCEPTS.md)
 - [Lab 8 핵심 개념: Helm Chart 배포와 Operator 비교](docs/LAB-08-CONCEPTS.md)
+- [Lab 9 핵심 개념: S3 정적 웹사이트 호스팅과 CDN 연동](docs/LAB-09-CONCEPTS.md)
+- [Lab 10 핵심 개념: 백업 전략과 재해 복구 시스템](docs/LAB-10-CONCEPTS.md)
 
 ### 공식 문서
 - [MinIO 공식 문서](https://docs.min.io/)
