@@ -514,6 +514,22 @@ EOF
 # 파일 목록 확인
 echo "생성된 웹사이트 파일:"
 ls -la website-files/
+
+# 📋 예상 결과:
+# total 32
+# drwxrwxr-x 2 user user 4096 Aug 11 01:50 .
+# drwxrwxr-x 3 user user 4096 Aug 11 01:50 ..
+# -rw-rw-r-- 1 user user 2156 Aug 11 01:50 404.html
+# -rw-rw-r-- 1 user user 1834 Aug 11 01:50 about.html
+# -rw-rw-r-- 1 user user 1756 Aug 11 01:50 contact.html
+# -rw-rw-r-- 1 user user 3245 Aug 11 01:50 index.html
+# -rw-rw-r-- 1 user user 2890 Aug 11 01:50 script.js
+# -rw-rw-r-- 1 user user 4567 Aug 11 01:50 styles.css
+# 
+# 💡 설명:
+# - 완전한 정적 웹사이트 구조 생성
+# - HTML, CSS, JavaScript 파일 포함
+# - 404 에러 페이지까지 준비 완료
 ```
 
 ### 3단계: 웹사이트 파일 업로드
@@ -526,6 +542,19 @@ mc cp --recursive website-files/ local/my-website/
 
 # 업로드된 파일 확인
 mc ls local/my-website/
+
+# 📋 예상 결과:
+# [2024-08-11 01:52:15 UTC]  2.1KiB 404.html
+# [2024-08-11 01:52:15 UTC]  1.8KiB about.html
+# [2024-08-11 01:52:15 UTC]  1.7KiB contact.html
+# [2024-08-11 01:52:15 UTC]  3.2KiB index.html
+# [2024-08-11 01:52:15 UTC]  2.8KiB script.js
+# [2024-08-11 01:52:15 UTC]  4.5KiB styles.css
+# 
+# 💡 설명:
+# - 모든 웹사이트 파일이 성공적으로 업로드됨
+# - 파일 크기와 업로드 시간 확인 가능
+# - MinIO 버킷에 웹사이트 콘텐츠 저장 완료
 
 # 파일별 상세 정보 확인
 for file in index.html styles.css script.js about.html contact.html 404.html; do
@@ -564,6 +593,28 @@ mc policy set-json website-public-policy.json local/my-website
 
 # 정책 적용 확인
 mc policy get local/my-website
+
+# 📋 예상 결과:
+# {
+#   "Version": "2012-10-17",
+#   "Statement": [
+#     {
+#       "Effect": "Allow",
+#       "Principal": "*",
+#       "Action": [
+#         "s3:GetObject"
+#       ],
+#       "Resource": [
+#         "arn:aws:s3:::my-website/*"
+#       ]
+#     }
+#   ]
+# }
+# 
+# 💡 설명:
+# - 공개 읽기 정책이 성공적으로 적용됨
+# - 모든 사용자(*) 가 GetObject 권한 보유
+# - 웹사이트 파일에 공개 접근 가능
 ```
 
 ### 5단계: 웹사이트 호스팅 설정
@@ -590,6 +641,23 @@ echo "404 페이지: http://localhost:9000/my-website/404.html"
 # curl을 통한 접근 테스트
 echo -e "\n=== HTTP 응답 테스트 ==="
 curl -I http://localhost:9000/my-website/index.html
+
+# 📋 예상 결과:
+# HTTP/1.1 200 OK
+# Accept-Ranges: bytes
+# Content-Length: 3245
+# Content-Type: text/html
+# ETag: "9bb58f26192e4ba00f01e2e7b136bbd8"
+# Last-Modified: Sun, 11 Aug 2024 01:52:15 GMT
+# Server: MinIO
+# Vary: Origin
+# X-Amz-Request-Id: 17C8B2F4A1B2C3D4
+# Date: Sun, 11 Aug 2024 01:55:30 GMT
+# 
+# 💡 설명:
+# - HTTP 200 OK 응답으로 정상 접근 확인
+# - Content-Type이 text/html로 올바르게 설정
+# - MinIO 서버에서 웹 콘텐츠 제공 중
 ```
 
 ## 🎯 실습 완료 체크리스트

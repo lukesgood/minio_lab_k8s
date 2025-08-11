@@ -50,6 +50,18 @@ mc admin config set local compression mime_types=".txt,.log,.csv"
 
 # 설정 적용
 mc admin service restart local
+
+# 📋 예상 결과:
+# Restart command successfully sent to `local`. Type Ctrl-C to quit or wait to follow the status of the restart process.
+# 
+# ...
+# 
+# MinIO service restarted successfully.
+# 
+# 💡 설명:
+# - MinIO 서비스가 새 설정으로 재시작됨
+# - 성능 최적화 설정이 적용됨
+# - API 요청 처리량 및 응답 시간 개선
 ```
 
 ### 2단계: 리소스 최적화
@@ -82,6 +94,35 @@ EOF
 
 chmod +x resource_optimizer.sh
 ./resource_optimizer.sh
+
+# 📋 예상 결과:
+# === 리소스 최적화 분석 ===
+# CPU 사용률:
+# NAME                     CPU(cores)   MEMORY(bytes)
+# minio-ss-0-0            125m         512Mi
+# minio-ss-0-1            98m          445Mi
+# 
+# 메모리 사용률:
+#     Requests:
+#       cpu:     250m
+#       memory:  512Mi
+#     Limits:
+#       cpu:     500m
+#       memory:  1Gi
+# 
+# 스토리지 사용률:
+# NAME                STATUS   VOLUME                     CAPACITY   ACCESS MODES
+# data-minio-ss-0-0   Bound    pvc-abc123                10Gi       RWO
+# 
+# === 최적화 권장사항 ===
+# 1. CPU: 현재 사용률 기반 리소스 조정
+# 2. 메모리: 버퍼 크기 최적화
+# 3. 스토리지: I/O 패턴 분석 및 최적화
+# 
+# 💡 설명:
+# - 현재 리소스 사용률이 요청량 대비 적절한 수준
+# - 메모리 사용률 50% 수준으로 안정적
+# - 추가 최적화 여지 확인
 ```
 
 ### 3단계: 자동 스케일링 설정
@@ -117,6 +158,19 @@ spec:
 EOF
 
 kubectl apply -f hpa.yaml
+
+# 📋 예상 결과:
+# horizontalpodautoscaler.autoscaling/minio-hpa created
+# 
+# HPA 상태 확인:
+# kubectl get hpa -n minio-tenant
+# NAME        REFERENCE             TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+# minio-hpa   StatefulSet/minio     15%/70%, 45%/80%   2         10        2          1m
+# 
+# 💡 설명:
+# - CPU 70%, 메모리 80% 임계값으로 자동 스케일링 설정
+# - 최소 2개, 최대 10개 Pod로 확장 가능
+# - 현재 리소스 사용률이 임계값 이하로 안정적
 ```
 
 ### 4단계: 운영 자동화

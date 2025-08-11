@@ -45,6 +45,14 @@ kubectl create secret tls minio-tls \
   --cert=minio.crt --key=minio.key \
   -n minio-tenant
 
+# 📋 예상 결과:
+# secret/minio-tls created
+# 
+# 💡 설명:
+# - TLS 인증서가 Secret으로 생성됨
+# - MinIO Pod에서 HTTPS 통신 가능
+# - 자체 서명 인증서로 테스트 환경 구성
+
 # TLS 설정 확인
 kubectl get secret minio-tls -n minio-tenant -o yaml
 ```
@@ -86,6 +94,14 @@ spec:
 EOF
 
 kubectl apply -f network-policy.yaml
+
+# 📋 예상 결과:
+# networkpolicy.networking.k8s.io/minio-network-policy created
+# 
+# 💡 설명:
+# - 네트워크 정책이 적용되어 트래픽 제한
+# - 지정된 포트(9000, 9001)만 접근 허용
+# - 네임스페이스 간 통신 제어 강화
 ```
 
 ### 3단계: 고급 IAM 정책
@@ -121,6 +137,14 @@ cat > advanced-security-policy.json << 'EOF'
 EOF
 
 mc admin policy add local advanced-security-policy advanced-security-policy.json
+
+# 📋 예상 결과:
+# Added policy `advanced-security-policy` successfully.
+# 
+# 💡 설명:
+# - IP 주소 기반 접근 제한 정책 생성
+# - 암호화 요구사항 포함
+# - 시간 기반 접근 제어 설정
 ```
 
 ### 4단계: 감사 로깅 활성화

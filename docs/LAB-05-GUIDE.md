@@ -115,6 +115,21 @@ dd if=/dev/zero of=file_1gb.dat bs=1M count=1024 2>/dev/null
 # 파일 크기 확인
 echo -e "\n생성된 테스트 파일:"
 ls -lh *.dat
+
+# 📋 예상 결과:
+# -rw-rw-r-- 1 user user 1.0K Aug 11 01:40 file_1kb.dat
+# -rw-rw-r-- 1 user user 100K Aug 11 01:40 file_100kb.dat
+# -rw-rw-r-- 1 user user 1.0M Aug 11 01:40 file_1mb.dat
+# -rw-rw-r-- 1 user user  10M Aug 11 01:40 file_10mb.dat
+# -rw-rw-r-- 1 user user  50M Aug 11 01:40 file_50mb.dat
+# -rw-rw-r-- 1 user user 100M Aug 11 01:40 file_100mb.dat
+# -rw-rw-r-- 1 user user 500M Aug 11 01:40 file_500mb.dat
+# -rw-rw-r-- 1 user user 1.0G Aug 11 01:40 file_1gb.dat
+# 
+# 💡 설명:
+# - dd 명령으로 다양한 크기의 테스트 파일 생성
+# - /dev/zero를 사용하여 빠른 파일 생성
+# - 파일 크기별 성능 특성 분석을 위한 준비
 ```
 
 #### 단일 파일 업로드 성능 테스트
@@ -133,6 +148,22 @@ done
 
 echo -e "\n업로드 성능 결과:"
 cat results/timing_results.csv
+
+# 📋 예상 결과:
+# Test,Duration(seconds)
+# Upload_1kb,0.156
+# Upload_100kb,0.234
+# Upload_1mb,0.445
+# Upload_10mb,1.234
+# Upload_50mb,4.567
+# Upload_100mb,8.901
+# Upload_500mb,35.678
+# Upload_1gb,68.234
+# 
+# 💡 설명:
+# - 파일 크기가 클수록 업로드 시간 증가
+# - 100MB 이상에서 Multipart Upload 자동 활성화
+# - 네트워크 대역폭과 디스크 I/O가 주요 병목
 ```
 
 #### 단일 파일 다운로드 성능 테스트
@@ -151,6 +182,21 @@ done
 
 echo -e "\n다운로드 성능 결과:"
 tail -n +1 results/timing_results.csv | grep Download
+
+# 📋 예상 결과:
+# Download_1kb,0.089
+# Download_100kb,0.123
+# Download_1mb,0.234
+# Download_10mb,0.789
+# Download_50mb,2.345
+# Download_100mb,4.567
+# Download_500mb,18.901
+# Download_1gb,35.678
+# 
+# 💡 설명:
+# - 다운로드가 업로드보다 일반적으로 빠름
+# - 캐싱 효과로 인한 성능 향상 가능
+# - 네트워크 대역폭이 주요 제한 요소
 ```
 
 ### 3단계: 처리량 계산 및 분석

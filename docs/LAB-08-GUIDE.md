@@ -90,11 +90,45 @@ helm install minio-helm minio/minio \
   --set auth.rootPassword=password123 \
   --set defaultBuckets="test-bucket"
 
+# 📋 예상 결과:
+# NAME: minio-helm
+# LAST DEPLOYED: Sun Aug 11 01:45:00 2024
+# NAMESPACE: minio-helm
+# STATUS: deployed
+# REVISION: 1
+# TEST SUITE: None
+# NOTES:
+# MinIO can be accessed via port 9000 on the following DNS name from within your cluster:
+# minio-helm.minio-helm.svc.cluster.local
+# 
+# 💡 설명:
+# - Helm 릴리스가 성공적으로 배포됨
+# - STATUS: deployed 확인 필요
+# - 클러스터 내부 DNS로 접근 가능
+
 # 배포 상태 확인
 helm status minio-helm -n minio-helm
 
 # 배포된 리소스 확인
 kubectl get all -n minio-helm
+
+# 📋 예상 결과:
+# NAME                              READY   STATUS    RESTARTS   AGE
+# pod/minio-helm-6c8f7b9d5c-x7k2m  1/1     Running   0          2m
+# 
+# NAME                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+# service/minio-helm   ClusterIP   10.96.123.45    <none>        9000/TCP   2m
+# 
+# NAME                         READY   UP-TO-DATE   AVAILABLE   AGE
+# deployment.apps/minio-helm   1/1     1            1           2m
+# 
+# NAME                                    DESIRED   CURRENT   READY   AGE
+# replicaset.apps/minio-helm-6c8f7b9d5c  1         1         1       2m
+# 
+# 💡 설명:
+# - Pod가 Running 상태로 정상 배포
+# - Deployment로 관리되는 단일 인스턴스
+# - ClusterIP 서비스로 내부 접근 가능
 ```
 
 ### 3단계: 커스텀 Values 파일 생성

@@ -142,6 +142,14 @@ data:
 EOF
 
 kubectl apply -f prometheus-config.yaml
+
+# 📋 예상 결과:
+# configmap/prometheus-config created
+# 
+# 💡 설명:
+# - Prometheus 설정이 ConfigMap으로 생성됨
+# - MinIO 메트릭 수집을 위한 scrape 설정 포함
+# - 알림 규칙이 함께 설정됨
 ```
 
 #### Prometheus 배포
@@ -204,6 +212,15 @@ spec:
 EOF
 
 kubectl apply -f prometheus-deployment.yaml
+
+# 📋 예상 결과:
+# deployment.apps/prometheus created
+# service/prometheus created
+# 
+# 💡 설명:
+# - Prometheus 서버가 monitoring 네임스페이스에 배포됨
+# - ClusterIP 서비스로 내부 접근 가능
+# - 15일간 메트릭 데이터 보존 설정
 ```
 
 ### 3단계: Grafana 설치
@@ -259,6 +276,15 @@ spec:
 EOF
 
 kubectl apply -f grafana-deployment.yaml
+
+# 📋 예상 결과:
+# deployment.apps/grafana created
+# service/grafana created
+# 
+# 💡 설명:
+# - Grafana가 monitoring 네임스페이스에 배포됨
+# - 기본 관리자 계정: admin/admin123
+# - 포트 3000으로 웹 인터페이스 제공
 ```
 
 ### 4단계: 서비스 상태 확인
@@ -268,6 +294,20 @@ kubectl apply -f grafana-deployment.yaml
 echo "=== 모니터링 서비스 상태 ==="
 kubectl get pods -n monitoring
 kubectl get services -n monitoring
+
+# 📋 예상 결과:
+# NAME                          READY   STATUS    RESTARTS   AGE
+# grafana-7c6b4b8f9d-x7k2m     1/1     Running   0          2m
+# prometheus-6f8d7c9b5d-h4n8j  1/1     Running   0          3m
+# 
+# NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+# grafana      ClusterIP   10.96.123.45    <none>        3000/TCP   2m
+# prometheus   ClusterIP   10.96.234.56    <none>        9090/TCP   3m
+# 
+# 💡 설명:
+# - 모든 Pod가 Running 상태여야 함
+# - ClusterIP로 내부 통신 가능
+# - 포트 포워딩으로 외부 접근 설정
 
 # 포트 포워딩 설정
 echo "포트 포워딩 설정 중..."

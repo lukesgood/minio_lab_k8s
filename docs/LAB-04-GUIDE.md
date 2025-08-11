@@ -70,6 +70,19 @@ time mc cp small-file.dat local/test-bucket/small-file.dat
 
 # 업로드 상세 정보 확인
 mc stat local/test-bucket/small-file.dat
+
+# 📋 예상 결과:
+# real    0m0.123s
+# user    0m0.045s
+# sys     0m0.012s
+# 
+# Name      : small-file.dat
+# Date      : 2024-08-11 01:30:15 UTC
+# Size      : 1.0 MiB
+# ETag      : d41d8cd98f00b204e9800998ecf8427e
+# Type      : application/octet-stream
+# Metadata  :
+#   Content-Type: application/octet-stream
 ```
 
 #### Multipart Upload (큰 파일)
@@ -81,6 +94,20 @@ time mc cp large-file.dat local/test-bucket/large-file.dat
 
 # Multipart Upload 설정 확인
 mc admin config get local api
+
+# 📋 예상 결과:
+# real    0m2.456s  (Single Part보다 오래 걸림)
+# user    0m0.234s
+# sys     0m0.089s
+# 
+# API 설정에서 multipart_size 확인:
+# api multipart_size=64MiB
+# api max_parts_count=10000
+# 
+# 💡 설명:
+# - 200MB 파일은 자동으로 Multipart Upload 사용
+# - 64MB 청크로 분할되어 업로드
+# - 네트워크 오류 시 실패한 부분만 재업로드 가능
 ```
 
 **💡 관찰 포인트:**
@@ -102,6 +129,23 @@ mc cp medium-file.dat local/test-bucket/medium-with-metadata.dat \
 
 # 메타데이터 확인
 mc stat local/test-bucket/medium-with-metadata.dat
+
+# 📋 예상 결과:
+# Name      : medium-with-metadata.dat
+# Date      : 2024-08-11 01:35:22 UTC
+# Size      : 50.0 MiB
+# ETag      : 9bb58f26192e4ba00f01e2e7b136bbd8
+# Type      : application/octet-stream
+# Metadata  :
+#   Content-Type         : application/octet-stream
+#   X-Amz-Meta-Author    : MinIO-Lab
+#   X-Amz-Meta-Purpose   : Testing
+#   X-Amz-Meta-Version   : 1.0
+# 
+# 💡 설명:
+# - 사용자 정의 메타데이터는 X-Amz-Meta- 접두사로 저장
+# - 메타데이터는 객체와 함께 저장되어 검색 가능
+# - Content-Type은 시스템 메타데이터로 분류
 ```
 
 #### 메타데이터 조회 및 활용
@@ -112,6 +156,22 @@ mc stat --json local/test-bucket/medium-with-metadata.dat | jq '.metadata'
 
 # 특정 메타데이터 필터링
 mc stat --json local/test-bucket/medium-with-metadata.dat | jq '.metadata."X-Amz-Meta-Author"'
+
+# 📋 예상 결과:
+# 전체 메타데이터:
+# {
+#   "Content-Type": "application/octet-stream",
+#   "X-Amz-Meta-Author": "MinIO-Lab",
+#   "X-Amz-Meta-Purpose": "Testing",
+#   "X-Amz-Meta-Version": "1.0"
+# }
+# 
+# 특정 메타데이터:
+# "MinIO-Lab"
+# 
+# 💡 설명:
+# - jq를 사용하여 JSON 형태의 메타데이터 파싱
+# - 특정 필드만 추출하여 자동화 스크립트에서 활용 가능
 ```
 
 ### 5단계: 객체 태깅

@@ -87,6 +87,16 @@ echo "백업 완료 시간: ${backup_time}초"
 
 # 백업 결과 확인
 mc ls local/backup-primary/
+
+# 📋 예상 결과:
+# [2024-08-11 01:55:30 UTC]     0B 20240811_015530/
+# 
+# 백업 완료 시간: 3초
+# 
+# 💡 설명:
+# - 타임스탬프 기반 백업 디렉토리 생성
+# - 전체 프로덕션 데이터가 백업됨
+# - 백업 시간은 데이터 크기에 비례
 ```
 
 #### 동기화 백업 (mc mirror)
@@ -108,6 +118,18 @@ mc mirror local/production-data/ local/backup-secondary/mirror/ --overwrite
 
 # 동기화 결과 확인
 mc ls local/backup-secondary/mirror/
+
+# 📋 예상 결과:
+# [2024-08-11 01:56:15 UTC]   25B application.log
+# [2024-08-11 01:56:15 UTC]   19B config.json
+# [2024-08-11 01:56:15 UTC]   35B important-file.txt
+# [2024-08-11 01:56:15 UTC]   42B important-file-modified.txt
+# [2024-08-11 01:56:15 UTC]   28B user-database.sql
+# 
+# 💡 설명:
+# - 미러링으로 원본과 동일한 구조 유지
+# - 변경된 파일만 동기화되어 효율적
+# - --overwrite 옵션으로 기존 파일 덮어쓰기
 ```
 
 ### 3단계: 버전 관리 활성화
@@ -123,6 +145,14 @@ mc version enable local/production-data
 # 버전 관리 상태 확인
 mc version info local/production-data
 
+# 📋 예상 결과:
+# production-data versioning is enabled
+# 
+# 💡 설명:
+# - 버킷에서 객체 버전 관리 활성화됨
+# - 파일 수정 시 이전 버전 자동 보존
+# - 실수로 삭제/수정된 파일 복구 가능
+
 # 버전 관리 테스트
 echo "버전 1: 초기 데이터" > versioned-file.txt
 mc cp versioned-file.txt local/production-data/
@@ -135,6 +165,16 @@ mc cp versioned-file.txt local/production-data/
 
 # 버전 목록 확인
 mc ls --versions local/production-data/versioned-file.txt
+
+# 📋 예상 결과:
+# [2024-08-11 01:57:45 UTC]   18B STANDARD versioned-file.txt
+# [2024-08-11 01:57:30 UTC]   22B STANDARD null versioned-file.txt
+# [2024-08-11 01:57:15 UTC]   20B STANDARD null versioned-file.txt
+# 
+# 💡 설명:
+# - 3개 버전이 모두 보존됨
+# - 최신 버전이 맨 위에 표시
+# - 각 버전마다 고유한 버전 ID 존재
 ```
 
 ### 4단계: 자동화된 백업 스크립트
