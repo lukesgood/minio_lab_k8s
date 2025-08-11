@@ -171,8 +171,16 @@ deployment.apps/minio-operator created
 - **완전한 설치**: 모든 필수 리소스 포함
 
 **실제 설치되는 이미지 버전**:
-- 릴리스 태그: v5.0.18
-- 실제 컨테이너 이미지: minio/operator:v7.1.1
+- **kustomize 참조 태그**: v5.0.18 (GitHub 릴리스)
+- **실제 컨테이너 이미지**: minio/operator:v7.1.1
+- **이유**: kustomize 설정에서 내부적으로 다른 이미지 버전 사용
+
+**버전 확인 방법**:
+```bash
+# 설치 후 실제 이미지 확인
+kubectl get deployment minio-operator -n minio-operator -o jsonpath='{.spec.template.spec.containers[0].image}'
+# 출력: minio/operator:v7.1.1
+```
 
 ### ⚠️ 중요 참고사항
 - **이전 URL 사용 금지**: `https://raw.githubusercontent.com/minio/operator/master/resources/operator.yaml`은 더 이상 사용할 수 없습니다
@@ -433,6 +441,11 @@ kubectl get deployment minio-operator -n minio-operator -o jsonpath='{.spec.temp
 ```
 minio/operator:v7.1.1
 ```
+
+### 📚 버전 불일치 이해
+- **설치 명령어**: v5.0.18 태그 참조
+- **실제 실행**: v7.1.1 컨테이너 이미지
+- **정상 동작**: 이는 의도된 동작이며 문제가 아님
 
 ---
 
