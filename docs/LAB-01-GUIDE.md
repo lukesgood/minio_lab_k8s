@@ -191,64 +191,13 @@ Operator 패턴의 개념과 MinIO Operator의 역할을 이해했는지 확인�
 
 ---
 
-## Step 4: MinIO Operator 네임스페이스 생성
+## Step 4: MinIO Operator 설치
 
 ### 💡 개념 설명
-네임스페이스는 Kubernetes 클러스터 내에서 리소스를 논리적으로 분리하는 방법입니다:
+MinIO Operator는 kustomize를 통해 설치할 수 있습니다. 이 방법은 모든 필수 리소스를 자동으로 설치합니다:
 
-**네임스페이스 사용 이유**:
-- **격리**: 다른 애플리케이션과 분리
-- **보안**: 네임스페이스별 권한 관리
-- **관리**: 리소스 그룹화 및 정리
-- **멀티테넌시**: 여러 팀/프로젝트 분리
-
-### 🔍 실행할 명령어
-```bash
-kubectl create namespace minio-operator
-```
-
-### ✅ 예상 출력
-```
-namespace/minio-operator created
-```
-
-### 📋 명령어 설명
-- `kubectl create namespace`: 새로운 네임스페이스 생성
-- `minio-operator`: MinIO Operator 전용 네임스페이스 이름
-
-### 🔍 네임스페이스 확인
-```bash
-kubectl get namespaces
-```
-
-### ✅ 확인 결과
-```
-NAME              STATUS   AGE
-default           Active   5d
-kube-node-lease   Active   5d
-kube-public       Active   5d
-kube-system       Active   5d
-minio-operator    Active   10s
-```
-
-### 📚 네임스페이스 설명
-- **default**: 기본 네임스페이스
-- **kube-system**: 시스템 구성 요소
-- **kube-public**: 공개 리소스
-- **kube-node-lease**: 노드 하트비트
-- **minio-operator**: 새로 생성된 MinIO Operator 네임스페이스
-
-### 🛑 체크포인트
-minio-operator 네임스페이스가 "Active" 상태로 생성되었는지 확인하세요.
-
----
-
-## Step 5: MinIO Operator 설치
-
-### 💡 개념 설명
-MinIO Operator는 공식 YAML 매니페스트를 통해 설치할 수 있습니다. 이 매니페스트에는 다음이 포함됩니다:
-
-**포함된 리소스**:
+**자동 설치되는 리소스**:
+- **네임스페이스**: minio-operator 자동 생성
 - **CRDs**: Tenant, Policy 등의 사용자 정의 리소스
 - **RBAC**: 서비스 계정, 역할, 바인딩
 - **Deployment**: Operator 컨트롤러 Pod
@@ -256,11 +205,13 @@ MinIO Operator는 공식 YAML 매니페스트를 통해 설치할 수 있습니�
 
 ### 🔍 실행할 명령어
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/minio/operator/master/resources/operator.yaml
+# 최신 안정 버전 MinIO Operator 설치 (kustomize 방식)
+kubectl kustomize github.com/minio/operator\?ref=v5.0.18 | kubectl apply -f -
 ```
 
 ### ✅ 예상 출력
 ```
+namespace/minio-operator created
 customresourcedefinition.apiextensions.k8s.io/tenants.minio.min.io created
 serviceaccount/minio-operator created
 clusterrole.rbac.authorization.k8s.io/minio-operator-role created
@@ -268,6 +219,28 @@ clusterrolebinding.rbac.authorization.k8s.io/minio-operator-binding created
 deployment.apps/minio-operator created
 service/minio-operator created
 ```
+
+### 📚 설치 방법 설명
+
+**kustomize 방식의 장점**:
+- **최신 버전**: 검증된 안정 버전 사용 (v5.0.18)
+- **검증된 설정**: 공식 테스트를 거친 구성
+- **자동 네임스페이스**: minio-operator 네임스페이스 자동 생성
+- **완전한 설치**: 모든 필수 리소스 포함
+
+**대안 설치 방법**:
+```bash
+# 최신 개발 버전 (권장하지 않음)
+kubectl kustomize github.com/minio/operator | kubectl apply -f -
+
+# 특정 버전 지정
+kubectl kustomize github.com/minio/operator\?ref=v5.0.15 | kubectl apply -f -
+```
+
+### ⚠️ 중요 참고사항
+- **이전 URL 사용 금지**: `https://raw.githubusercontent.com/minio/operator/master/resources/operator.yaml`은 더 이상 사용할 수 없습니다
+- **kustomize 필수**: Kubernetes 1.14+ 버전에서 기본 제공되는 kustomize를 사용합니다
+- **버전 지정**: 프로덕션 환경에서는 항상 특정 버전을 지정하는 것을 권장합니다
 
 ### 📚 설치된 리소스 설명
 
@@ -313,7 +286,7 @@ minio-operator   ClusterIP   10.96.123.45    <none>        9090/TCP   30s
 ---
 
 이것은 Lab 01 가이드의 첫 번째 부분입니다. 계속해서 나머지 단계들을 추가하겠습니다.
-## Step 6: Operator Pod 상태 확인
+## Step 5: Operator Pod 상태 확인
 
 ### 💡 개념 설명
 Operator는 Kubernetes Deployment로 실행되며, 지속적으로 클러스터 상태를 모니터링합니다.
@@ -384,7 +357,7 @@ Operator Pod가 "Running" 상태이고 READY가 "1/1"인지 확인하세요.
 
 ---
 
-## Step 7: Operator 로그 확인
+## Step 6: Operator 로그 확인
 
 ### 💡 개념 설명
 Operator 로그를 통해 설치 상태와 동작을 확인할 수 있습니다:
@@ -461,7 +434,7 @@ kubectl describe crd tenants.minio.min.io
 
 ---
 
-## Step 8: CRD (Custom Resource Definition) 확인
+## Step 7: CRD (Custom Resource Definition) 확인
 
 ### 💡 개념 설명
 CRD는 Kubernetes API를 확장하여 사용자 정의 리소스를 생성할 수 있게 해줍니다:
@@ -529,7 +502,7 @@ Tenant CRD가 정상적으로 등록되었는지 확인하세요.
 
 ---
 
-## Step 9: Operator 웹 콘솔 접근 설정
+## Step 8: Operator 웹 콘솔 접근 설정
 
 ### 💡 개념 설명
 MinIO Operator는 웹 기반 관리 콘솔을 제공합니다:
