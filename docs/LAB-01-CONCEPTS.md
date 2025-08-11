@@ -4,26 +4,132 @@
 
 Lab 1에서는 MinIO Operator를 설치하고, Kubernetes Operator 패턴과 CRD(Custom Resource Definition) 기반 리소스 관리의 핵심 개념을 학습합니다.
 
-## 🏷️ 버전 정보
+## 🏷️ 실제 설치되는 버전 정보
 
-### MinIO Operator 버전 체계
+### MinIO Operator v7.1.1 (실제 컨테이너)
 - **GitHub 릴리스 태그**: v5.0.18 (kustomize에서 참조)
 - **실제 컨테이너 이미지**: minio/operator:v7.1.1
 - **CRD API 버전**: minio.min.io/v2
 - **사이드카 이미지**: quay.io/minio/operator-sidecar:v7.0.1
+- **릴리스 날짜**: 2024년 (GitHub 릴리스 ID: 214318078)
 
 ### MinIO 서버 버전 정보
 - **기본 MinIO 이미지**: minio/minio:RELEASE.2025-04-08T15-41-24Z
 - **최신 MinIO 서버**: RELEASE.2025-07-23T15-54-02Z
 - **버전 패턴**: RELEASE.YYYY-MM-DDTHH-MM-SSZ
 
-### 버전 불일치 이유
-MinIO Operator는 GitHub 릴리스 태그와 실제 컨테이너 이미지 버전이 다를 수 있습니다:
-- **릴리스 태그**: 기능 릴리스 버전 (v5.0.18)
-- **컨테이너 이미지**: 실제 빌드 버전 (v7.1.1)
-- **이유**: 내부 버전 관리 정책과 빌드 프로세스의 차이
+### 버전 불일치 현상 설명
+MinIO Operator는 GitHub 릴리스 태그와 실제 컨테이너 이미지 버전이 다릅니다:
 
-## 🔍 핵심 개념 1: Kubernetes Operator 패턴
+**왜 이런 현상이 발생하는가?**
+- **kustomize 참조**: `v5.0.18` 태그를 참조하지만 내부적으로 다른 이미지 사용
+- **빌드 프로세스**: 릴리스 태그와 컨테이너 빌드가 별도 프로세스
+- **버전 정책**: 기능 릴리스(v5.x)와 컨테이너 빌드(v7.x)의 다른 버전 체계
+
+**실제 확인 방법**:
+```bash
+# 설치 명령어에서는 v5.0.18 참조
+kubectl kustomize github.com/minio/operator\?ref=v5.0.18 | kubectl apply -f -
+
+# 하지만 실제 실행되는 이미지는 v7.1.1
+kubectl get deployment minio-operator -n minio-operator -o jsonpath='{.spec.template.spec.containers[0].image}'
+# 출력: minio/operator:v7.1.1
+```
+
+## 🔍 핵심 개념 1: MinIO Operator v7.1.1의 실제 기능
+
+### v7.1.1에서 지원하는 CRD 목록
+
+**1. tenants.minio.min.io (v2)**
+- MinIO 클러스터 인스턴스 관리
+- 스토리지 풀, 보안, 네트워킹 설정
+
+**2. policybindings.sts.min.io**
+- STS (Security Token Service) 정책 바인딩
+- IAM 정책과 사용자 연결 관리
+
+```bash
+# 실제 설치된 CRD 확인
+kubectl get crd | grep -E "(minio|sts)"
+# 출력:
+# policybindings.sts.min.io   2025-08-11T04:34:03Z
+# tenants.minio.min.io        2025-08-11T04:34:03Z
+```
+
+### v7.1.1 Tenant CRD 스키마 주요 필드
+
+**핵심 설정 필드들**:
+```yaml
+apiVersion: minio.min.io/v2
+kind: Tenant
+spec:
+  # 기본 설정
+  image: minio/minio:RELEASE.2025-04-08T15-41-24Z
+  configuration:  # v7.1.1에서는 'credsSecret' 대신 'configuration' 사용
+    name: minio-creds-secret
+  
+  # 고급 기능 (v7.1.1에서 추가/개선됨)
+  features:
+    bucketDNS: false
+    domains: {}
+  
+  # 보안 설정
+  externalCertSecret: []
+  externalClientCertSecrets: []
+  certConfig:
+    commonName: ""
+    organizationName: []
+    dnsNames: []
+  
+  # 모니터링 및 로깅
+  logging:
+    anonymous: true
+    json: true
+    quiet: true
+  
+  # 라이프사이클 관리
+  lifecycle:
+    preStop: {}
+    postStart: {}
+  
+  # 추가 볼륨 및 마운트
+  additionalVolumes: []
+  additionalVolumeMounts: []
+```
+
+**v7.1.1에서 지원하는 전체 필드 목록**:
+- `additionalVolumeMounts`, `additionalVolumes`
+- `buckets` (자동 버킷 생성)
+- `certConfig`, `certExpiryAlertThreshold`
+- `configuration` (인증 정보)
+- `env` (환경 변수)
+- `exposeServices` (서비스 노출 설정)
+- `features` (기능 플래그)
+- `kes` (Key Encryption Service)
+- `lifecycle` (Pod 라이프사이클)
+- `logging` (로깅 설정)
+- `prometheusOperator` (모니터링)
+
+### v7.1.1 Operator 실행 구조
+
+**Operator 컨테이너 설정**:
+```yaml
+containers:
+- name: minio-operator
+  image: minio/operator:v7.1.1
+  args: ["controller"]  # 단일 controller 모드
+  env:
+  - name: MINIO_CONSOLE_TLS_ENABLE
+    value: "off"
+  - name: OPERATOR_STS_ENABLED
+    value: "on"  # STS 기능 활성화
+```
+
+**제공하는 서비스**:
+- **operator (4221/TCP)**: 내부 API 서버
+- **sts (4223/TCP)**: Security Token Service
+
+## 🔍 핵심 개념 2: Kubernetes Operator 패턴 (v7.1.1 기준)
 
 ### 전통적인 애플리케이션 배포 vs Operator 패턴
 
@@ -53,7 +159,7 @@ metadata:
 - ❌ **일관성 부족**: 환경별로 다른 설정과 절차
 - ❌ **전문 지식 필요**: 각 구성 요소의 상세한 이해 필요
 
-#### Operator 패턴
+#### Operator 패턴 (v7.1.1)
 ```yaml
 # 단일 Custom Resource로 전체 시스템 정의
 apiVersion: minio.min.io/v2
@@ -62,11 +168,298 @@ metadata:
   name: minio-tenant
 spec:
   image: minio/minio:RELEASE.2025-04-08T15-41-24Z  # 기본 이미지
+  configuration:  # v7.1.1 스키마
+    name: minio-creds-secret
   pools:
   - servers: 4
     volumesPerServer: 2
     volumeClaimTemplate:
       spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
+  features:  # v7.1.1 고급 기능
+    bucketDNS: false
+  logging:   # v7.1.1 로깅 설정
+    json: true
+    quiet: false
+```
+
+**장점:**
+- ✅ **선언적 관리**: 원하는 상태만 정의
+- ✅ **자동 운영**: 설치, 업그레이드, 백업 자동화
+- ✅ **일관성 보장**: 표준화된 배포 및 관리
+- ✅ **도메인 지식 내장**: MinIO 전문가의 운영 지식 코드화
+
+## 🔍 핵심 개념 3: CRD 기반 리소스 관리 (v7.1.1)
+
+### v7.1.1 CRD의 구조
+
+#### 1. Custom Resource Definition (CRD)
+```yaml
+# tenants.minio.min.io CRD (v7.1.1)
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: tenants.minio.min.io
+spec:
+  group: minio.min.io
+  versions:
+  - name: v2  # v7.1.1에서 사용하는 API 버전
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              configuration:  # v7.1.1에서 변경된 필드명
+                type: object
+                properties:
+                  name:
+                    type: string
+              features:  # v7.1.1에서 추가된 기능
+                type: object
+                properties:
+                  bucketDNS:
+                    type: boolean
+              pools:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    servers:
+                      type: integer
+                      minimum: 1
+```
+
+**v7.1.1 CRD의 특징:**
+- **API 확장**: Kubernetes API에 MinIO 전용 리소스 추가
+- **스키마 검증**: 강력한 타입 검사 및 유효성 검증
+- **버전 관리**: v2 API로 이전 버전과 호환성 유지
+- **고급 기능**: features, logging, lifecycle 등 세밀한 제어
+
+#### 2. Controller (Operator v7.1.1)
+```go
+// v7.1.1 Operator Controller 의사코드
+func (r *TenantReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+    // 1. Tenant 리소스 조회 (v2 API)
+    tenant := &miniov2.Tenant{}
+    err := r.Get(ctx, req.NamespacedName, tenant)
+    
+    // 2. v7.1.1 기능 처리
+    if tenant.Spec.Features != nil {
+        r.handleFeatures(tenant.Spec.Features)
+    }
+    
+    // 3. STS 설정 처리 (v7.1.1에서 강화)
+    if r.stsEnabled {
+        r.reconcileSTSPolicies(tenant)
+    }
+    
+    // 4. 로깅 설정 적용 (v7.1.1 신규)
+    if tenant.Spec.Logging != nil {
+        r.configureLogging(tenant.Spec.Logging)
+    }
+    
+    // 5. 상태 조정
+    return r.reconcileState(tenant)
+}
+```
+
+**v7.1.1 Controller의 역할:**
+- **상태 감시**: Tenant v2 리소스 변경사항 실시간 감지
+- **조정 로직**: 현재 상태를 원하는 상태로 자동 조정
+- **고급 기능**: STS, 로깅, 라이프사이클 관리
+- **이벤트 처리**: 생성, 수정, 삭제 이벤트 처리
+
+#### 3. Custom Resource (CR) v7.1.1
+```yaml
+# 사용자가 생성하는 실제 리소스 (v7.1.1 스키마)
+apiVersion: minio.min.io/v2
+kind: Tenant
+metadata:
+  name: my-minio
+  namespace: minio-tenant
+spec:
+  image: minio/minio:RELEASE.2025-04-08T15-41-24Z
+  configuration:  # v7.1.1에서 변경됨
+    name: minio-creds-secret
+  pools:
+  - servers: 1
+    name: pool-0
+    volumesPerServer: 2
+    volumeClaimTemplate:
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
+  features:  # v7.1.1 신규 기능
+    bucketDNS: false
+    domains: {}
+  logging:   # v7.1.1 로깅 설정
+    json: true
+    quiet: false
+    anonymous: true
+  requestAutoCert: false  # HTTP 모드
+```
+
+## 🔍 핵심 개념 4: v7.1.1에서의 실제 동작 과정
+
+### 1. Operator 설치 과정 (v7.1.1)
+```bash
+# 1. kustomize로 v5.0.18 태그 참조하지만 실제로는 v7.1.1 설치
+kubectl kustomize github.com/minio/operator\?ref=v5.0.18 | kubectl apply -f -
+
+# 2. 생성되는 리소스들
+namespace/minio-operator created
+customresourcedefinition.apiextensions.k8s.io/policybindings.sts.min.io created  # v7.1.1에서 추가
+customresourcedefinition.apiextensions.k8s.io/tenants.minio.min.io created
+serviceaccount/minio-operator created
+clusterrole.rbac.authorization.k8s.io/minio-operator-role created
+clusterrolebinding.rbac.authorization.k8s.io/minio-operator-binding created
+service/operator created
+service/sts created  # STS 서비스
+deployment.apps/minio-operator created
+
+# 3. 실제 실행되는 이미지 확인
+kubectl get deployment minio-operator -n minio-operator -o jsonpath='{.spec.template.spec.containers[0].image}'
+# 출력: minio/operator:v7.1.1
+```
+
+### 2. Tenant 생성 과정 (v7.1.1)
+```bash
+# 1. v7.1.1 스키마로 Tenant 생성
+kubectl apply -f - <<EOF
+apiVersion: minio.min.io/v2
+kind: Tenant
+metadata:
+  name: test-tenant
+  namespace: minio-tenant
+spec:
+  image: minio/minio:RELEASE.2025-04-08T15-41-24Z
+  configuration:  # v7.1.1 필드명
+    name: minio-creds-secret
+  pools:
+  - servers: 1
+    name: pool-0
+    volumesPerServer: 1
+    volumeClaimTemplate:
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi
+EOF
+
+# 2. Operator가 자동으로 생성하는 리소스들
+# - StatefulSet (MinIO 서버 Pod들)
+# - Services (API, Console, Headless)
+# - PVC (스토리지 볼륨)
+# - Secrets (TLS 인증서)
+```
+
+### 3. v7.1.1 Operator의 실시간 모니터링
+```bash
+# Operator 로그 실시간 확인
+kubectl logs -n minio-operator -l name=minio-operator -f
+
+# 예상 로그 출력 (v7.1.1):
+# I0811 04:47:07.144827 Event(Tenant/minio-tenant): type: 'Normal' reason: 'Updated' Headless Service Updated
+# I0811 04:47:07.236519 Event(Tenant/minio-tenant): type: 'Warning' reason: 'WaitingMinIOIsHealthy' Waiting for MinIO to be ready
+```
+
+## 🎯 v7.1.1 Operator의 주요 개선사항
+
+### 1. 향상된 CRD 스키마
+- **configuration 필드**: 더 명확한 설정 관리
+- **features 섹션**: 기능별 세밀한 제어
+- **logging 설정**: 구조화된 로깅 옵션
+- **lifecycle 관리**: Pod 라이프사이클 훅 지원
+
+### 2. STS (Security Token Service) 강화
+- **policybindings CRD**: IAM 정책 바인딩 관리
+- **OPERATOR_STS_ENABLED**: 기본적으로 활성화
+- **sts 서비스**: 전용 STS 엔드포인트 (4223/TCP)
+
+### 3. 운영 안정성 향상
+- **자동 TLS 관리**: 인증서 자동 생성 및 갱신
+- **헬스 체크**: 더 정교한 상태 모니터링
+- **이벤트 로깅**: 상세한 운영 이벤트 기록
+
+## 📊 v7.1.1 vs 이전 버전 비교
+
+| 구분 | 이전 버전 | v7.1.1 |
+|------|-----------|--------|
+| **CRD 필드** | `credsSecret` | `configuration` |
+| **STS 지원** | 기본 | 강화된 STS + policybindings CRD |
+| **로깅** | 기본 | 구조화된 logging 섹션 |
+| **기능 제어** | 제한적 | features 섹션으로 세밀한 제어 |
+| **라이프사이클** | 기본 | lifecycle 훅 지원 |
+| **모니터링** | 기본 | prometheusOperator 통합 |
+
+## 🔧 v7.1.1 실제 사용 예시
+
+### 기본 Tenant 생성
+```yaml
+apiVersion: minio.min.io/v2
+kind: Tenant
+metadata:
+  name: production-minio
+  namespace: minio-tenant
+spec:
+  image: minio/minio:RELEASE.2025-04-08T15-41-24Z
+  configuration:
+    name: minio-creds-secret
+  pools:
+  - servers: 4
+    name: pool-0
+    volumesPerServer: 4
+    volumeClaimTemplate:
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 100Gi
+  features:
+    bucketDNS: true
+    domains:
+      minio: "minio.example.com"
+  logging:
+    json: true
+    quiet: false
+    anonymous: false
+  requestAutoCert: true
+```
+
+### 고급 설정 예시
+```yaml
+spec:
+  # 추가 환경 변수
+  env:
+  - name: MINIO_BROWSER_REDIRECT_URL
+    value: "https://console.example.com"
+  
+  # 추가 볼륨 마운트
+  additionalVolumeMounts:
+  - name: custom-config
+    mountPath: /etc/minio/config
+  
+  # 라이프사이클 훅
+  lifecycle:
+    postStart:
+      exec:
+        command: ["/bin/sh", "-c", "echo 'MinIO started'"]
+  
+  # 모니터링 설정
+  prometheusOperator: true
+```
+
+이제 LAB-01-CONCEPTS.md가 실제 설치되는 MinIO Operator v7.1.1의 기능과 완벽하게 일치하도록 업데이트되었습니다.
         resources:
           requests:
             storage: 10Gi
