@@ -325,7 +325,7 @@ kubectl describe pod -n minio-operator -l name=minio-operator
 
 ### 🚨 문제 해결
 
-#### 문제: Pod가 Pending 상태
+#### 문제 1: Pod가 Pending 상태
 **원인**: 스케줄링 불가 (리소스 부족, taint, 노드 선택기)
 
 **해결 방법**:
@@ -340,7 +340,31 @@ kubectl top nodes  # metrics-server 필요
 kubectl describe node | grep -i taint
 ```
 
-#### 문제: Pod가 CrashLoopBackOff 상태
+#### 문제 2: 단일 노드에서 1/2 Ready 상태 (Anti-Affinity 문제)
+**증상**: Deployment가 1/2 상태로 표시되고, 하나의 Pod가 Pending 상태
+
+**원인**: MinIO Operator의 Pod Anti-Affinity 규칙으로 인해 같은 노드에 두 개의 Pod를 배치할 수 없음
+
+**해결 방법**:
+```bash
+# 현재 상태 확인
+kubectl get deployment -n minio-operator
+kubectl get pods -n minio-operator
+
+# 단일 노드 환경에서는 replica를 1로 조정
+kubectl scale deployment minio-operator -n minio-operator --replicas=1
+
+# 결과 확인
+kubectl get deployment -n minio-operator
+```
+
+**예상 결과**:
+```
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+minio-operator   1/1     1            1           5m
+```
+
+#### 문제 3: Pod가 CrashLoopBackOff 상태
 **원인**: 애플리케이션 오류, 권한 문제, 설정 오류
 
 **해결 방법**:
