@@ -47,7 +47,7 @@ kubectl get nodes
 
 ## 🚀 빠른 시작
 
-### 자동 환경 감지 및 설정 (권장)
+### 환경 설정 및 Lab Guide 실습 (권장)
 ```bash
 # 1. 리포지토리 클론
 git clone https://github.com/lukesgood/minio_lab_k8s.git
@@ -62,29 +62,34 @@ cd minio_lab_k8s
 # 4. 환경 자동 설정
 ./setup-environment.sh
 
-# 5. 실습 시작
-./run-lab.sh
+# 5. Lab Guide를 순서대로 따라하며 실습 진행
+# docs/LAB-00-GUIDE.md부터 시작하여 단계별로 학습
 ```
 
-### 대화형 단계별 가이드 (초보자 권장) 🆕
+### 단계별 Lab Guide 실습 방법
 ```bash
-# 단계별 상세 설명과 체크포인트가 포함된 대화형 가이드
-./interactive-lab-guide.sh
-```
+# 각 Lab Guide를 순서대로 따라하며 실습 진행
+# Core Labs (필수 실습)
+docs/LAB-00-GUIDE.md  # 환경 사전 검증
+docs/LAB-01-GUIDE.md  # MinIO Operator 설치
+docs/LAB-02-GUIDE.md  # MinIO Tenant 배포
+docs/LAB-03-GUIDE.md  # MinIO Client 및 기본 사용법
 
-### 수동 환경 선택 (고급 사용자)
-```bash
-# 환경 감지 후 수동 설정
-./detect-environment.sh
-./setup-environment.sh
+# Advanced Labs (권장 실습)
+docs/LAB-04-GUIDE.md  # S3 API 고급 기능
+docs/LAB-05-GUIDE.md  # 성능 테스트
+docs/LAB-06-GUIDE.md  # 사용자 및 권한 관리
 
-# 실습 메뉴에서 원하는 모듈 선택
-./run-lab.sh
+# Optional Labs (선택 실습)
+docs/LAB-07-GUIDE.md  # 모니터링 설정
+docs/LAB-08-GUIDE.md  # Helm Chart 실습
+docs/LAB-09-GUIDE.md  # 정적 웹사이트 호스팅
+docs/LAB-10-GUIDE.md  # 백업 및 재해 복구
+docs/LAB-11-GUIDE.md  # 고급 보안 설정
+docs/LAB-12-GUIDE.md  # 운영 최적화
 ```
 
 **⏱️ 예상 소요시간: 90-120분 (전체 실습 기준)**
-
-## 📋 환경 요구사항
 
 ### 단일 노드 환경 (학습/개발용)
 - Kubernetes 클러스터 (1개 노드)
