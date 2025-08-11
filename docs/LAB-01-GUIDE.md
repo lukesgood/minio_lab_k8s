@@ -526,12 +526,81 @@ Tenant CRD가 정상적으로 등록되었는지 확인하세요.
 
 ---
 
-## Step 8: Operator 웹 콘솔 접근 설정
+## Step 8: MinIO Operator 관리 방법 이해
 
 ### 💡 개념 설명
-MinIO Operator는 웹 기반 관리 콘솔을 제공합니다:
+MinIO Operator v7.1.1에서는 웹 콘솔이 기본적으로 제공되지 않습니다. 대신 다음과 같은 방법으로 관리할 수 있습니다:
 
-**웹 콘솔 기능**:
+**관리 방법들**:
+- **kubectl**: Kubernetes 네이티브 방식으로 Tenant 리소스 관리
+- **MinIO Tenant 콘솔**: 각 Tenant마다 제공되는 웹 관리 인터페이스
+- **MinIO Client (mc)**: 명령줄 도구를 통한 관리
+- **API**: REST API를 통한 프로그래매틱 관리
+
+### 🔍 현재 Operator 서비스 확인
+```bash
+kubectl get svc -n minio-operator
+```
+
+### ✅ 예상 출력
+```
+NAME       TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+operator   ClusterIP   10.109.26.96   <none>        4221/TCP   20m
+sts        ClusterIP   10.110.16.37   <none>        4223/TCP   20m
+```
+
+### 📚 서비스 설명
+- **operator (4221/TCP)**: Operator API 서버 (내부 관리용)
+- **sts (4223/TCP)**: Security Token Service (인증 관리)
+
+### 🔍 Operator API 상태 확인
+```bash
+# 포트 포워딩으로 API 접근 테스트
+kubectl port-forward svc/operator -n minio-operator 4221:4221 &
+
+# API 응답 확인 (백그라운드에서 실행)
+curl -s http://localhost:4221/ || echo "API running but no web console"
+
+# 포트 포워딩 중지
+pkill -f "kubectl port-forward"
+```
+
+### 📋 Operator 상태 종합 확인
+```bash
+echo "=== MinIO Operator 설치 완료 확인 ==="
+echo ""
+echo "1. Deployment 상태:"
+kubectl get deployment -n minio-operator
+echo ""
+echo "2. Pod 상태:"
+kubectl get pods -n minio-operator
+echo ""
+echo "3. 서비스 상태:"
+kubectl get svc -n minio-operator
+echo ""
+echo "4. CRD 등록 상태:"
+kubectl get crd | grep minio
+```
+
+### ✅ 설치 완료 기준
+다음 조건들이 모두 만족되면 LAB-01이 성공적으로 완료된 것입니다:
+
+- ✅ **Deployment**: `minio-operator 1/1 Ready`
+- ✅ **Pod**: `Running` 상태, 재시작 횟수 0
+- ✅ **Services**: `operator`, `sts` 서비스 생성됨
+- ✅ **CRD**: `tenants.minio.min.io` 등록됨
+
+### 🚀 다음 단계
+MinIO Operator 설치가 완료되었습니다! 이제 다음 단계로 진행할 수 있습니다:
+
+1. **LAB-02**: MinIO Tenant 배포 (실제 스토리지 클러스터)
+2. **LAB-03**: MinIO Client 설정 및 기본 사용법
+3. **LAB-04**: S3 API 고급 기능 활용
+
+### 💡 참고사항
+- **웹 콘솔**: MinIO Tenant 배포 후 각 Tenant의 콘솔을 사용
+- **관리 도구**: kubectl과 MinIO Client (mc)가 주요 관리 도구
+- **API 접근**: 필요시 Operator API를 직접 호출 가능
 - **Tenant 관리**: 생성, 수정, 삭제
 - **모니터링**: 상태, 메트릭, 로그 확인
 - **사용자 관리**: IAM 사용자 및 정책 관리
