@@ -258,46 +258,45 @@ Thu Aug 10 10:46:00 UTC 2023
 ### 💡 개념 설명
 업로드된 데이터가 실제로 어디에 저장되는지 확인하여 MinIO의 데이터 구조를 이해합니다.
 
-### 🔍 Pod 내부 데이터 구조 확인
+### 🔍 MinIO 데이터 검증
+
+업로드된 데이터가 정상적으로 저장되었는지 MinIO API를 통해 확인합니다.
+
 ```bash
-kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- find /export0 /export1 /export2 /export3 -name "*test-file*" -type f
-```
-
-### ✅ 실제 결과 (최신 MinIO)
-```
-(파일이 발견되지 않음 - 정상 동작)
-```
-
-### 📚 데이터 구조 해석
-
-**최신 MinIO의 고급 저장 방식**:
-- 🔍 **내부 최적화**: 사용자가 직접 파일을 찾을 수 없는 고도로 최적화된 구조
-- 🔍 **Erasure Coding**: 데이터가 해시 기반 이름으로 분할되어 내부적으로 관리
-- 🔍 **보안 강화**: 직접적인 파일시스템 접근 차단
-- 🔍 **성능 최적화**: 메타데이터와 데이터의 효율적인 분리 관리
-
-**올바른 데이터 확인 방법**:
-```bash
-# MinIO API를 통한 확인 (권장)
+# 버킷 내 파일 목록 확인
 mc ls local/test-bucket/
+
+# 파일 상세 정보 확인
 mc stat local/test-bucket/test-file.txt
-```
 
-### 🔍 대안: .minio.sys 구조 확인
-```bash
-# 시스템 메타데이터 디렉토리 확인
-kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- ls -la /export0/data/.minio.sys/
-```
-
-### 🔍 실제 데이터 접근
-```bash
-# 최신 MinIO에서는 mc 명령어 사용 권장
+# 파일 내용 확인
 mc cat local/test-bucket/test-file.txt
 ```
 
 ### ✅ 예상 출력
-```
+```bash
+# mc ls 결과
+[2025-08-11 16:30:00 KST]    58B STANDARD test-file.txt
+
+# mc stat 결과
+Name      : test-file.txt
+Date      : 2025-08-11 16:30:00 KST
+Size      : 58 B
+ETag      : d41d8cd98f00b204e9800998ecf8427e
+Type      : file
+
+# mc cat 결과
 Hello MinIO World!
+This is a test file for MinIO lab
+```
+
+### 📚 데이터 검증 완료
+
+**확인된 사항**:
+- ✅ **파일 업로드**: 정상적으로 저장됨
+- ✅ **데이터 무결성**: ETag를 통한 체크섬 확인
+- ✅ **접근 가능성**: MinIO API를 통한 정상 접근
+- ✅ **메타데이터**: 파일 크기, 날짜 등 정보 정상
 This is a test file for MinIO lab
 ```
 

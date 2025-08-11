@@ -689,7 +689,7 @@ kubectl get pvc -n minio-tenant
 **해결 방법**:
 ```bash
 # Pod 내부 권한 확인
-kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- ls -la /export
+kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- ls -la /export0/data/
 ```
 
 ### 🛑 체크포인트
@@ -753,13 +753,11 @@ drwxr-xr-x 2 root root 4096 Aug 10 10:30 pvc-34567890-3456-3456-3456-34567890123
 drwxr-xr-x 2 root root 4096 Aug 10 10:30 pvc-45678901-4567-4567-4567-456789012345_minio-tenant_data-minio-tenant-pool-0-3
 ```
 
-### 🔍 MinIO 데이터 구조 확인
+### 🔍 MinIO 볼륨 구조 확인
+
 ```bash
-# Pod 내부에서 데이터 구조 확인 (다중 볼륨 구조)
+# 첫 번째 볼륨 구조 확인 (대표 예시)
 kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- ls -la /export0/data/
-kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- ls -la /export1/data/
-kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- ls -la /export2/data/
-kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- ls -la /export3/data/
 ```
 
 ### ✅ 예상 출력
@@ -770,17 +768,21 @@ drwxrwxrwx 3 root root 4096 Aug 11 06:16 ..
 drwxr-xr-x 7 1000 1000 4096 Aug 11 06:21 .minio.sys
 ```
 
-### 📚 MinIO 데이터 구조 이해
+### 📚 볼륨 구조 이해
 
-**실제 MinIO 최신 버전 구조**:
-- ✅ **`.minio.sys`**: MinIO 시스템 메타데이터 디렉토리 (유일한 가시적 디렉토리)
-- ✅ **권한**: `1000:1000` (컨테이너 내 MinIO 사용자)
-- ✅ **데이터 저장**: Erasure Coding으로 해시 기반 이름의 숨겨진 파일들로 저장
+**다중 볼륨 구성**:
+- ✅ **4개 볼륨**: `/export0`, `/export1`, `/export2`, `/export3`
+- ✅ **동일한 구조**: 모든 볼륨이 동일한 `.minio.sys` 구조
+- ✅ **Erasure Coding**: 데이터가 4개 볼륨에 분산 저장
+- ✅ **권한**: `1000:1000` (MinIO 컨테이너 사용자)
 
-**중요한 이해사항**:
-- 🔍 **버킷 데이터**: 사용자가 직접 볼 수 있는 `data1-4` 디렉토리로 저장되지 않음
-- 🔍 **최신 방식**: 데이터가 내부적으로 관리되어 직접 파일시스템 탐색 불가
-- 🔍 **데이터 확인**: `mc` 명령어나 MinIO Console 사용 필수
+**추가 볼륨 확인** (선택사항):
+```bash
+# 다른 볼륨들도 동일한 구조를 가짐
+kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- ls -la /export1/data/
+kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- ls -la /export2/data/
+kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- ls -la /export3/data/
+```
 
 ### 🛑 체크포인트
 실제 스토리지 경로와 MinIO 데이터 구조를 확인했는지 점검하세요.
