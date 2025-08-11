@@ -1,4 +1,4 @@
-# Lab 4: S3 API 고급 기능
+# Lab 4: S3 API 고급 기능 - Lab Guide
 
 ## 📚 학습 목표
 
@@ -419,4 +419,4 @@ mc rm --recursive local/test-bucket/
 
 **🔗 관련 문서:**
 - [LAB-04-CONCEPTS.md](LAB-04-CONCEPTS.md) - S3 API 고급 기능 상세 개념
-- [LAB-05-GUIDE.md](LAB-05-GUIDE.md) - 다음 실습: 성능 테스트
+- [LAB-05-GUIDE.md](LAB-05-GUIDE.md) - 다음 Lab Guide: 성능 테스트

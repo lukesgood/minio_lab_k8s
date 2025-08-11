@@ -1,4 +1,4 @@
-# Lab 3: MinIO Client 및 기본 사용법 - 단계별 실습 가이드
+# Lab 3: MinIO Client 및 기본 사용법 - Lab Guide
 
 ## 📚 개요
 
@@ -321,7 +321,7 @@ MinIO Client 설정과 기본 사용법을 완료했습니다!
 - 스토리지 클래스 활용
 
 ### 🔗 관련 문서
-- [Lab 4 가이드: S3 API 고급 기능](LAB-04-GUIDE.md)
+- [Lab 4 Lab Guide: S3 API 고급 기능](LAB-04-GUIDE.md)
 - [MinIO Client 상세 개념](LAB-03-CONCEPTS.md)
 
 ---

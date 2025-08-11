@@ -1,4 +1,4 @@
-# Lab 6: 사용자 및 권한 관리
+# Lab 6: 사용자 및 권한 관리 - Lab Guide
 
 ## 📚 학습 목표
 
@@ -689,4 +689,4 @@ mc rb local/backup-storage
 
 **🔗 관련 문서:**
 - [LAB-06-CONCEPTS.md](LAB-06-CONCEPTS.md) - 사용자 및 권한 관리 상세 개념 (예정)
-- [LAB-07-GUIDE.md](LAB-07-GUIDE.md) - 다음 실습: 모니터링 설정
+- [LAB-07-GUIDE.md](LAB-07-GUIDE.md) - 다음 Lab Guide: 모니터링 설정

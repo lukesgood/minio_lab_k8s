@@ -1,4 +1,4 @@
-# Lab 0: 환경 사전 검증 - 단계별 실습 가이드
+# Lab 0: 환경 사전 검증 - Lab Guide
 
 ## 📚 개요
 
@@ -552,7 +552,7 @@ kubectl get namespaces
 - MinIO Operator 배포 및 확인
 
 ### 🔗 관련 문서
-- [Lab 1 가이드: MinIO Operator 설치](LAB-01-GUIDE.md)
+- [Lab 1 Lab Guide: MinIO Operator 설치](LAB-01-GUIDE.md)
 - [동적 프로비저닝 상세 개념](LAB-00-CONCEPTS.md)
 - [환경별 최적화 가이드](../SELECT_ENVIRONMENT.md)
 

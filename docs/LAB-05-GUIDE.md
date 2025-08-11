@@ -1,4 +1,4 @@
-# Lab 5: 성능 테스트
+# Lab 5: 성능 테스트 - Lab Guide
 
 ## 📚 학습 목표
 
@@ -657,4 +657,4 @@ mc rm --recursive local/test-bucket/ --force
 
 **🔗 관련 문서:**
 - [LAB-05-CONCEPTS.md](LAB-05-CONCEPTS.md) - 성능 테스트 상세 개념 (예정)
-- [LAB-06-GUIDE.md](LAB-06-GUIDE.md) - 다음 실습: 사용자 및 권한 관리
+- [LAB-06-GUIDE.md](LAB-06-GUIDE.md) - 다음 Lab Guide: 사용자 및 권한 관리

@@ -1,4 +1,4 @@
-# Lab 11: 고급 보안 설정
+# Lab 11: 고급 보안 설정 - Lab Guide
 
 ## 📚 학습 목표
 
@@ -197,4 +197,4 @@ echo "고급 보안 설정 실습 정리 완료"
 
 **🔗 관련 문서:**
 - [LAB-11-CONCEPTS.md](LAB-11-CONCEPTS.md) - 고급 보안 설정 상세 개념
-- [LAB-12-GUIDE.md](LAB-12-GUIDE.md) - 다음 실습: 운영 최적화
+- [LAB-12-GUIDE.md](LAB-12-GUIDE.md) - 다음 Lab Guide: 운영 최적화

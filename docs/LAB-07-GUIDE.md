@@ -1,4 +1,4 @@
-# Lab 7: 모니터링 설정
+# Lab 7: 모니터링 설정 - Lab Guide
 
 ## 📚 학습 목표
 
@@ -858,4 +858,4 @@ echo "모니터링 시스템 정리 완료"
 
 **🔗 관련 문서:**
 - [LAB-07-CONCEPTS.md](LAB-07-CONCEPTS.md) - 모니터링 시스템 상세 개념
-- [LAB-08-GUIDE.md](LAB-08-GUIDE.md) - 다음 실습: Helm Chart 실습
+- [LAB-08-GUIDE.md](LAB-08-GUIDE.md) - 다음 Lab Guide: Helm Chart 실습

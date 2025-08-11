@@ -1,4 +1,4 @@
-# Lab 2: MinIO Tenant 배포 - 단계별 실습 가이드
+# Lab 2: MinIO Tenant 배포 - Lab Guide
 
 ## 📚 개요
 
@@ -960,7 +960,7 @@ MinIO Tenant 배포가 성공적으로 완료되었습니다! 이제 실제 MinI
 - 데이터 무결성 검증 및 실제 저장 위치 확인
 
 ### 🔗 관련 문서
-- [Lab 3 가이드: MinIO Client 및 기본 사용법](LAB-03-GUIDE.md)
+- [Lab 3 Lab Guide: MinIO Client 및 기본 사용법](LAB-03-GUIDE.md)
 - [MinIO Tenant 상세 개념](LAB-02-CONCEPTS.md)
 - [동적 프로비저닝 심화 학습](LAB-00-CONCEPTS.md)
 

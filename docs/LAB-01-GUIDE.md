@@ -1,4 +1,4 @@
-# Lab 1: MinIO Operator 설치 - 단계별 실습 가이드
+# Lab 1: MinIO Operator 설치 - Lab Guide
 
 ## 📚 개요
 
@@ -734,7 +734,7 @@ MinIO Operator 설치가 완료되었습니다! 이제 실제 MinIO Tenant를 �
 - Erasure Coding 설정 및 검증
 
 ### 🔗 관련 문서
-- [Lab 2 가이드: MinIO Tenant 배포](LAB-02-GUIDE.md)
+- [Lab 2 Lab Guide: MinIO Tenant 배포](LAB-02-GUIDE.md)
 - [Operator 패턴 상세 개념](LAB-01-CONCEPTS.md)
 - [MinIO 공식 Operator 문서](https://docs.min.io/minio/k8s/)
 

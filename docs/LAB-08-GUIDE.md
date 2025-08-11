@@ -1,4 +1,4 @@
-# Lab 8: Helm Chart 실습
+# Lab 8: Helm Chart 실습 - Lab Guide
 
 ## 📚 학습 목표
 
@@ -893,4 +893,4 @@ echo "Helm 실습 정리 완료"
 
 **🔗 관련 문서:**
 - [LAB-08-CONCEPTS.md](LAB-08-CONCEPTS.md) - Helm Chart 배포 상세 개념
-- [LAB-09-GUIDE.md](LAB-09-GUIDE.md) - 다음 실습: 정적 웹사이트 호스팅
+- [LAB-09-GUIDE.md](LAB-09-GUIDE.md) - 다음 Lab Guide: 정적 웹사이트 호스팅

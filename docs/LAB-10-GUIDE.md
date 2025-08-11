@@ -1,4 +1,4 @@
-# Lab 10: 백업 및 재해 복구
+# Lab 10: 백업 및 재해 복구 - Lab Guide
 
 ## 📚 학습 목표
 
@@ -914,4 +914,4 @@ echo "백업 및 재해 복구 실습 정리 완료"
 
 **🔗 관련 문서:**
 - [LAB-10-CONCEPTS.md](LAB-10-CONCEPTS.md) - 백업 및 재해 복구 상세 개념
-- [LAB-11-GUIDE.md](LAB-11-GUIDE.md) - 다음 실습: 고급 보안 설정
+- [LAB-11-GUIDE.md](LAB-11-GUIDE.md) - 다음 Lab Guide: 고급 보안 설정

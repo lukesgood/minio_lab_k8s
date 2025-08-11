@@ -363,15 +363,17 @@ docs/LAB-02-GUIDE.md  # MinIO Tenant 배포
 docs/LAB-03-GUIDE.md  # MinIO Client 및 기본 사용법
 
 # Advanced Labs (권장 실습)
-docs/LAB-04-GUIDE.md  # S3 API 고급 기능 (예정)
-docs/LAB-05-GUIDE.md  # 성능 테스트 (예정)
-docs/LAB-06-GUIDE.md  # 사용자 및 권한 관리 (예정)
+docs/LAB-04-GUIDE.md  # S3 API 고급 기능
+docs/LAB-05-GUIDE.md  # 성능 테스트
+docs/LAB-06-GUIDE.md  # 사용자 및 권한 관리
 
 # Optional Labs (선택 실습)
-docs/LAB-07-GUIDE.md  # 모니터링 설정 (예정)
-docs/LAB-08-GUIDE.md  # Helm Chart 실습 (예정)
-docs/LAB-09-GUIDE.md  # 정적 웹사이트 호스팅 (예정)
-docs/LAB-10-GUIDE.md  # 백업 및 재해 복구 (예정)
+docs/LAB-07-GUIDE.md  # 모니터링 설정
+docs/LAB-08-GUIDE.md  # Helm Chart 실습
+docs/LAB-09-GUIDE.md  # 정적 웹사이트 호스팅
+docs/LAB-10-GUIDE.md  # 백업 및 재해 복구
+docs/LAB-11-GUIDE.md  # 고급 보안 설정
+docs/LAB-12-GUIDE.md  # 운영 최적화
 ```
 
 #### 🤖 자동화 스크립트 방식 (기존 방식)
