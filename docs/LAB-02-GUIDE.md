@@ -2,245 +2,241 @@
 
 ## 📚 개요
 
-이 실습에서는 MinIO Operator를 사용하여 실제 MinIO Tenant를 배포합니다. 동적 프로비저닝 과정을 실시간으로 관찰하고, WaitForFirstConsumer 모드의 동작 원리를 실제로 경험합니다.
+이 실습에서는 MinIO Operator를 사용하여 실제 MinIO Tenant를 배포합니다. **환경에 따른 최적화된 스토리지 클래스를 선택**하고, 동적 프로비저닝 과정을 실시간으로 관찰하며, MinIO의 권장사항을 준수한 배포를 경험합니다.
 
 ## 🎯 학습 목표
 
 - MinIO Tenant 개념과 역할 이해
+- **환경별 스토리지 클래스 선택 및 최적화**
+- **MinIO 권장 로컬 연결 스토리지 구성**
 - 실시간 동적 프로비저닝 과정 관찰
 - StatefulSet과 PVC의 관계 학습
 - WaitForFirstConsumer 동작 원리 체험
 - Erasure Coding 설정 및 검증
-- 실제 스토리지 경로 확인
-
-## 🏷️ 버전 정보
-
-### MinIO Tenant에서 사용되는 이미지
-- **MinIO 서버 이미지**: minio/minio (공식 기본값)
-- **사이드카 이미지**: quay.io/minio/operator-sidecar
-- **CRD API 버전**: minio.min.io/v2
-
-### 공식 GitHub 예제 기준
-- **예제 위치**: https://github.com/minio/operator/tree/main/examples
-- **기본 Tenant**: examples/kustomization/base/tenant.yaml
-- **공식 스키마**: GitHub 공식 CRD 정의 기준
-
-### 이미지 버전 선택 가이드
-- **기본 이미지 사용**: `image` 필드를 비우거나 생략 (권장)
-- **특정 버전 지정**: `image: minio/minio:RELEASE.YYYY-MM-DDTHH-MM-SSZ`
-- **최신 버전 사용**: `image: minio/minio:latest` (프로덕션 비권장)
 
 ## ⏱️ 예상 소요시간
-15-20분
+20-30분 (환경 설정 포함)
 
 ## 🔧 사전 준비사항
 
 - Lab 1 완료 (MinIO Operator 설치)
-- 스토리지 클래스 설정 완료
 - kubectl 명령어 도구
 - 충분한 클러스터 리소스 (최소 2GB RAM, 2 CPU)
 
 ---
 
-## Step 1: 사전 요구사항 확인
+## Step 1: 환경 확인 및 스토리지 전략 결정
 
 ### 💡 개념 설명
-MinIO Tenant 배포 전 환경 상태를 재확인합니다:
 
-**확인 항목**:
-- **MinIO Operator**: 정상 실행 상태
-- **스토리지 클래스**: 동적 프로비저닝 준비 상태
-- **클러스터 리소스**: 충분한 CPU/메모리
-- **네임스페이스**: Tenant 배포용 네임스페이스
+MinIO는 **워커 노드의 로컬 연결 스토리지 사용을 강력히 권장**합니다. 환경에 따라 적절한 스토리지 전략을 선택해야 합니다.
 
-### 🔍 MinIO Operator 상태 확인
+**MinIO 권장사항**:
+- ✅ **로컬 연결 스토리지** (Locally Attached Storage)
+- ✅ **워커 노드 전용 배포** (Control Plane 제외)
+- ✅ **직접 디스크 액세스** (네트워크 스토리지 회피)
+- ✅ **노드별 분산 배치** (고가용성)
+
+### 🔍 현재 환경 확인
+
 ```bash
+echo "=== 클러스터 환경 분석 ==="
+
+# 1. 노드 구성 확인
+echo "1. 노드 구성:"
+kubectl get nodes -o wide
+
+# 2. 워커 노드 수 계산
+WORKER_COUNT=$(kubectl get nodes --no-headers -l '!node-role.kubernetes.io/control-plane' | wc -l)
+echo -e "\n워커 노드 수: $WORKER_COUNT"
+
+# 3. 현재 스토리지 클래스 확인
+echo -e "\n2. 현재 스토리지 클래스:"
+kubectl get storageclass
+
+# 4. MinIO Operator 상태 확인
+echo -e "\n3. MinIO Operator 상태:"
 kubectl get pods -n minio-operator
 ```
 
-### ✅ 예상 출력
-```
-NAME                              READY   STATUS    RESTARTS   AGE
-minio-operator-7d4c8b5f9b-xyz12   1/1     Running   0          10m
-```
+### 📋 환경별 스토리지 전략
 
-### 📚 상태 해석
-- **READY**: 1/1 (정상)
-- **STATUS**: Running (실행 중)
-- **RESTARTS**: 0 (안정적)
+| 환경 | 워커 노드 수 | 권장 스토리지 | MinIO 권장도 | 특징 |
+|------|-------------|---------------|-------------|------|
+| **개발/테스트** | 0-1 | local-path | ⭐⭐⭐ | 간단, 빠른 설정 |
+| **프로덕션** | 2+ | minio-local-storage | ⭐⭐⭐⭐⭐ | **MinIO 공식 권장** |
+| **클라우드** | 2+ | ebs/pd-ssd | ⭐⭐⭐⭐ | 관리형 스토리지 |
+| **엔터프라이즈** | 3+ | longhorn/rook-ceph | ⭐⭐⭐ | 고가용성 |
 
-### 🔍 스토리지 클래스 확인
+### 🛑 체크포인트
+환경 분석 결과를 확인하고 적절한 스토리지 전략을 선택하세요.
+
+---
+
+## Step 2: 환경별 스토리지 클래스 설정
+
+### 💡 개념 설명
+
+환경 분석 결과에 따라 최적화된 스토리지 클래스를 설정합니다.
+
+### 🔧 Option A: 단일 노드 환경 (개발/테스트)
+
+**적용 조건**: 워커 노드 0-1개
+
 ```bash
+echo "=== 단일 노드 환경 설정 ==="
+
+# Local Path Provisioner 설치 (없는 경우)
+kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.24/deploy/local-path-storage.yaml
+
+# 기본 스토리지 클래스로 설정
+kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+
+# 설정 확인
 kubectl get storageclass
 ```
 
-### ✅ 예상 출력
-```
-NAME                 PROVISIONER                RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
-local-path (default) rancher.io/local-path      Delete          WaitForFirstConsumer   false                  1h
-```
+### 🏢 Option B: 다중 노드 환경 (MinIO 권장 로컬 스토리지)
 
-### 📚 중요 설정 확인
-- **(default)**: 기본 스토리지 클래스 설정됨
-- **VOLUMEBINDINGMODE**: WaitForFirstConsumer (핵심!)
-- **PROVISIONER**: 동적 프로비저닝 담당 컴포넌트
+**적용 조건**: 워커 노드 2개 이상, **MinIO 공식 권장**
 
-### 🚨 문제 해결
+#### B-1: MinIO 최적화 스토리지 클래스 생성
 
-#### 문제: Operator Pod가 Running이 아님
-**해결 방법**: Lab 1로 돌아가서 Operator 재설치
-
-#### 문제: 기본 스토리지 클래스 없음
-**해결 방법**:
 ```bash
-kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+echo "=== MinIO 권장 로컬 스토리지 설정 ==="
+
+# MinIO 최적화 스토리지 클래스 생성
+cat << EOF | kubectl apply -f -
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: minio-local-storage
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+    minio.min.io/optimized: "true"
+    minio.min.io/storage-type: "local-attached"
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+allowVolumeExpansion: false
+parameters:
+  fsType: "ext4"
+EOF
+```
+
+#### B-2: 워커 노드별 로컬 PV 생성
+
+```bash
+# 워커 노드 목록 가져오기
+WORKER_NODES=($(kubectl get nodes --no-headers -l '!node-role.kubernetes.io/control-plane' -o custom-columns=":metadata.name"))
+
+echo "워커 노드: ${WORKER_NODES[@]}"
+
+# 각 워커 노드에 스토리지 디렉토리 생성
+for node in "${WORKER_NODES[@]}"; do
+    echo "노드 $node에 스토리지 디렉토리 생성..."
+    
+    # Multipass 환경인 경우
+    if multipass list | grep -q "$node"; then
+        multipass exec "$node" -- sudo mkdir -p /mnt/minio-data/disk1 /mnt/minio-data/disk2
+        multipass exec "$node" -- sudo chown -R 1000:1000 /mnt/minio-data/
+    else
+        # 일반 환경인 경우 (SSH 접근 필요)
+        echo "노드 $node에 직접 접근하여 다음 명령어를 실행하세요:"
+        echo "sudo mkdir -p /mnt/minio-data/disk1 /mnt/minio-data/disk2"
+        echo "sudo chown -R 1000:1000 /mnt/minio-data/"
+    fi
+done
+
+# Local PV 생성
+for i in "${!WORKER_NODES[@]}"; do
+    node="${WORKER_NODES[$i]}"
+    
+    # 각 노드에 2개의 PV 생성
+    for disk in 1 2; do
+        cat << EOF | kubectl apply -f -
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: minio-local-pv-${node}-${disk}
+  labels:
+    minio.min.io/node: "${node}"
+    minio.min.io/disk: "disk${disk}"
+spec:
+  capacity:
+    storage: 50Gi
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: minio-local-storage
+  local:
+    path: /mnt/minio-data/disk${disk}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - ${node}
+EOF
+    done
+done
+
+echo "Local PV 생성 완료"
+```
+
+### 🌐 Option C: 분산 스토리지 환경
+
+**적용 조건**: 고가용성이 필요한 환경
+
+```bash
+echo "=== 분산 스토리지 설정 (Longhorn 예시) ==="
+
+# Longhorn 설치
+kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.5.3/deploy/longhorn.yaml
+
+# 설치 완료 대기
+echo "Longhorn 설치 중... (2-3분 소요)"
+kubectl wait --for=condition=ready pod -l app=longhorn-manager -n longhorn-system --timeout=300s
+
+# 기본 스토리지 클래스로 설정
+kubectl patch storageclass longhorn -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+```
+
+### 🔍 스토리지 클래스 설정 확인
+
+```bash
+echo "=== 스토리지 클래스 설정 확인 ==="
+
+# 스토리지 클래스 확인
+kubectl get storageclass
+
+# PV 확인 (Local Storage인 경우)
+kubectl get pv
+
+echo "스토리지 클래스 설정 완료!"
 ```
 
 ### 🛑 체크포인트
-Operator가 Running 상태이고 기본 스토리지 클래스가 설정되었는지 확인하세요.
+선택한 환경에 맞는 스토리지 클래스가 설정되고 기본 클래스로 지정되었는지 확인하세요.
 
 ---
 
-## Step 2: MinIO Tenant 개념 이해
+## Step 3: MinIO Tenant 네임스페이스 및 인증 설정
 
 ### 💡 개념 설명
 
-**MinIO Tenant란?**
-MinIO Operator에서 관리하는 MinIO 클러스터의 인스턴스입니다.
+MinIO Tenant를 위한 전용 네임스페이스를 생성하고 인증 정보를 설정합니다.
 
-**Tenant vs Instance 비교**:
-| 구분 | 전통적인 Instance | MinIO Tenant |
-|------|-------------------|--------------|
-| **관리 방식** | 수동 설정 | 선언적 정의 |
-| **확장** | 수동 스케일링 | 자동 스케일링 |
-| **업그레이드** | 수동 절차 | 자동 롤링 업데이트 |
-| **복구** | 수동 개입 | 자동 복구 |
-| **모니터링** | 별도 도구 | 통합 대시보드 |
+### 🔍 네임스페이스 생성
 
-### 📊 MinIO Tenant 아키텍처
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    MinIO Tenant                             │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │
-│  │   Pool 1    │    │   Pool 2    │    │   Pool N    │     │
-│  │             │    │             │    │             │     │
-│  │ ┌─────────┐ │    │ ┌─────────┐ │    │ ┌─────────┐ │     │
-│  │ │ Server 1│ │    │ │ Server 1│ │    │ │ Server 1│ │     │
-│  │ │ Server 2│ │    │ │ Server 2│ │    │ │ Server 2│ │     │
-│  │ │ Server 3│ │    │ │ Server 3│ │    │ │ Server 3│ │     │
-│  │ │ Server 4│ │    │ │ Server 4│ │    │ │ Server 4│ │     │
-│  │ └─────────┘ │    │ └─────────┘ │    │ └─────────┘ │     │
-│  └─────────────┘    └─────────────┘    └─────────────┘     │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                 Kubernetes Resources                        │
-├─────────────────────────────────────────────────────────────┤
-│  StatefulSet │ Services │ ConfigMaps │ Secrets │ PVCs      │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### 🔍 Tenant 구성 요소
-
-**1. Pool (풀)**
-- MinIO 서버들의 논리적 그룹
-- 독립적인 Erasure Coding 도메인
-- 확장 시 새로운 Pool 추가 가능
-
-**2. Server (서버)**
-- 실제 MinIO 프로세스가 실행되는 Pod
-- 각 서버는 여러 볼륨을 가질 수 있음
-- StatefulSet으로 관리됨
-
-**3. Volume (볼륨)**
-- 실제 데이터가 저장되는 스토리지
-- PVC (PersistentVolumeClaim)로 관리
-- 동적 프로비저닝으로 자동 생성
-
-### 📋 Erasure Coding 개념
-
-**Erasure Coding이란?**
-데이터를 여러 조각으로 나누어 저장하고, 일부 조각이 손실되어도 복구할 수 있는 기술입니다.
-
-**EC:4 설정 예시** (8개 드라이브):
-```
-┌─────────┬─────────┬─────────┬─────────┐
-│ Data 1  │ Data 2  │ Data 3  │ Data 4  │  ← 데이터 조각
-├─────────┼─────────┼─────────┼─────────┤
-│Parity 1 │Parity 2 │Parity 3 │Parity 4 │  ← 패리티 조각
-└─────────┴─────────┴─────────┴─────────┘
-
-- 4개 드라이브까지 장애 허용
-- 스토리지 효율: 50% (4/8)
-- 높은 데이터 보호 수준
-```
-
-### 🛑 체크포인트
-MinIO Tenant의 구조와 Erasure Coding 개념을 이해했는지 확인하세요.
-
----
-
-## Step 3: Tenant 네임스페이스 생성
-
-### 💡 개념 설명
-Tenant는 별도의 네임스페이스에 배포하여 격리와 관리를 용이하게 합니다:
-
-**네임스페이스 분리 이유**:
-- **격리**: Operator와 Tenant 분리
-- **보안**: 네임스페이스별 권한 관리
-- **관리**: 리소스 그룹화 및 정리
-- **멀티테넌시**: 여러 Tenant 독립 운영
-
-### 🔍 실행할 명령어
 ```bash
 kubectl create namespace minio-tenant
 ```
 
-### ✅ 예상 출력
-```
-namespace/minio-tenant created
-```
+### 🔑 인증 시크릿 생성
 
-### 🔍 네임스페이스 확인
-```bash
-kubectl get namespaces
-```
-
-### ✅ 확인 결과
-```
-NAME              STATUS   AGE
-default           Active   1d
-kube-node-lease   Active   1d
-kube-public       Active   1d
-kube-system       Active   1d
-minio-operator    Active   30m
-minio-tenant      Active   10s
-```
-
-### 📚 네임스페이스 구조
-- **minio-operator**: Operator 관련 리소스
-- **minio-tenant**: Tenant 관련 리소스 (새로 생성)
-
-### 🛑 체크포인트
-minio-tenant 네임스페이스가 "Active" 상태로 생성되었는지 확인하세요.
-
----
-
-## Step 4: Tenant 인증 시크릿 생성
-
-### 💡 개념 설명
-MinIO Tenant는 관리자 계정 정보를 Kubernetes Secret으로 관리합니다:
-
-**시크릿 필요성**:
-- **보안**: 평문 패스워드 저장 방지
-- **관리**: Kubernetes 네이티브 시크릿 관리
-- **자동화**: Operator가 자동으로 시크릿 참조
-- **회전**: 패스워드 변경 시 자동 적용
-
-### 🔍 실행할 명령어
 ```bash
 kubectl create secret generic minio-creds-secret \
   --from-literal=config.env="export MINIO_ROOT_USER=admin
@@ -248,126 +244,31 @@ export MINIO_ROOT_PASSWORD=password123" \
   -n minio-tenant
 ```
 
-### ✅ 예상 출력
-```
-secret/minio-creds-secret created
-```
+### 🔍 설정 확인
 
-### 📋 명령어 설명
-- `kubectl create secret generic`: 일반 시크릿 생성
-- `minio-creds-secret`: 시크릿 이름
-- `--from-literal`: 리터럴 값으로 시크릿 생성
-- `config.env`: MinIO 환경 변수 설정
-- `-n minio-tenant`: 대상 네임스페이스
-
-### 🔍 시크릿 확인
 ```bash
+echo "=== 네임스페이스 및 시크릿 확인 ==="
+kubectl get namespace minio-tenant
 kubectl get secret minio-creds-secret -n minio-tenant
 ```
 
-### ✅ 확인 결과
-```
-NAME                 TYPE     DATA   AGE
-minio-creds-secret   Opaque   1      10s
-```
-
-### 📚 시크릿 내용 확인 (디버깅용)
-```bash
-kubectl get secret minio-creds-secret -n minio-tenant -o yaml
-```
-
-### ⚠️ 보안 주의사항
-- **프로덕션 환경**: 강력한 패스워드 사용
-- **시크릿 관리**: 적절한 RBAC 설정
-- **백업**: 시크릿 백업 및 복구 계획
-
 ### 🛑 체크포인트
-minio-creds-secret이 성공적으로 생성되었는지 확인하세요.
+minio-tenant 네임스페이스와 인증 시크릿이 생성되었는지 확인하세요.
 
 ---
 
-## Step 5: 동적 프로비저닝 관찰 준비
+## Step 4: 환경별 MinIO Tenant YAML 생성
 
 ### 💡 개념 설명
-Tenant 배포 전에 현재 PV 상태를 확인하여 동적 프로비저닝 과정을 관찰할 준비를 합니다.
 
-**관찰 포인트**:
-- **배포 전**: PV가 존재하지 않음
-- **PVC 생성**: PV가 아직 생성되지 않음 (WaitForFirstConsumer)
-- **Pod 스케줄링**: PV가 자동으로 생성됨
-- **바인딩**: PVC와 PV가 연결됨
+환경에 맞는 최적화된 MinIO Tenant 설정을 생성합니다.
 
-### 🔍 현재 PV 상태 확인
-```bash
-echo "=== 배포 전 PV 상태 ==="
-kubectl get pv
-```
+### 🔧 환경별 Tenant 설정
 
-### ✅ 예상 출력 (배포 전)
-```
-No resources found
-```
-
-### 🔍 현재 PVC 상태 확인
-```bash
-echo "=== 배포 전 PVC 상태 ==="
-kubectl get pvc -n minio-tenant
-```
-
-### ✅ 예상 출력 (배포 전)
-```
-No resources found in minio-tenant namespace.
-```
-
-### 📊 모니터링 창 준비
-별도 터미널에서 실시간 모니터링을 위해 다음 명령어를 실행하세요:
-
-**터미널 1 (PV 모니터링)**:
-```bash
-watch -n 2 'kubectl get pv'
-```
-
-**터미널 2 (PVC 모니터링)**:
-```bash
-watch -n 2 'kubectl get pvc -n minio-tenant'
-```
-
-**터미널 3 (Pod 모니터링)**:
-```bash
-watch -n 2 'kubectl get pods -n minio-tenant'
-```
-
-### 🛑 체크포인트
-모니터링 창이 준비되었고 현재 PV/PVC가 없는 상태임을 확인하세요.
-
----
-
-## Step 6: MinIO Tenant YAML 정의 (환경별 스토리지 클래스 옵션)
-
-### 💡 개념 설명
-MinIO Tenant는 CRD를 통해 선언적으로 정의됩니다. **MinIO는 워커 노드의 로컬 연결 스토리지 사용을 강력히 권장**하며, 환경에 따라 최적화된 스토리지 클래스를 선택해야 합니다.
-
-**환경별 최적화 전략**:
-- **단일 노드**: 개발/테스트 환경, 리소스 효율성 중심
-- **다중 노드**: 프로덕션 환경, 고가용성 및 성능 중심, **로컬 연결 스토리지 권장**
-
-### 🏗️ 환경별 스토리지 클래스 옵션
-
-#### 📋 스토리지 클래스 선택 가이드
-
-| 환경 | 권장 스토리지 | 특징 | 사용 사례 | MinIO 권장도 |
-|------|---------------|------|-----------|-------------|
-| **단일 노드** | local-path | 간단, 빠른 설정 | 개발, 테스트, 학습 | ⭐⭐⭐ |
-| **다중 노드 (로컬)** | local-storage | **고성능, MinIO 권장** | 프로덕션, 고성능 요구 | ⭐⭐⭐⭐⭐ |
-| **다중 노드 (분산)** | longhorn, rook-ceph | 고가용성, 자동 복제 | 엔터프라이즈, 클라우드 | ⭐⭐⭐ |
-| **클라우드** | ebs, pd-ssd | 관리형, 확장성 | AWS EKS, GCP GKE | ⭐⭐⭐⭐ |
-
-### 🔧 Option 1: 단일 노드 환경 (기본 설정)
-
-**특징**: 개발/테스트 환경에 최적화된 설정
+#### A. 단일 노드 환경용 Tenant
 
 ```bash
-cat << EOF > minio-tenant-single-node.yaml
+cat << EOF > minio-tenant.yaml
 apiVersion: minio.min.io/v2
 kind: Tenant
 metadata:
@@ -376,10 +277,6 @@ metadata:
   labels:
     app: minio
     environment: development
-  annotations:
-    prometheus.io/path: /minio/v2/metrics/cluster
-    prometheus.io/port: "9000"
-    prometheus.io/scrape: "true"
 spec:
   configuration:
     name: minio-creds-secret
@@ -395,9 +292,9 @@ spec:
   
   ## 단일 노드 최적화 설정
   pools:
-  - servers: 1                    # 단일 서버
+  - servers: 1
     name: pool-0
-    volumesPerServer: 4           # 4개 볼륨 (EC 비활성화)
+    volumesPerServer: 4
     volumeClaimTemplate:
       metadata:
         name: data
@@ -406,10 +303,9 @@ spec:
         - ReadWriteOnce
         resources:
           requests:
-            storage: 2Gi          # 개발용 작은 용량
-        storageClassName: local-path  # Local Path Provisioner
+            storage: 2Gi
+        storageClassName: local-path
     
-    ## 리소스 제한 (단일 노드 최적화)
     resources:
       requests:
         memory: 1Gi
@@ -424,62 +320,13 @@ spec:
 EOF
 ```
 
-### 🏢 Option 2: 다중 노드 환경 - Local Storage (MinIO 권장) ⭐⭐⭐⭐⭐
+#### B. 다중 노드 환경용 Tenant (MinIO 권장)
 
-**특징**: **MinIO 공식 권장사항 준수**, 고성능, 로컬 연결 스토리지 사용
-
-#### 사전 준비: Local Storage 설정
 ```bash
-# 1. MinIO 최적화 Local Storage Class 및 PV 생성
-kubectl apply -f - << EOF
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: minio-local-storage
-  annotations:
-    storageclass.kubernetes.io/is-default-class: "true"
-    minio.min.io/optimized: "true"
-    minio.min.io/storage-type: "local-attached"
-provisioner: kubernetes.io/no-provisioner
-volumeBindingMode: WaitForFirstConsumer
-reclaimPolicy: Delete
-allowVolumeExpansion: false
-parameters:
-  fsType: "ext4"
----
-# 워커 노드별 Local PV 생성 (예시: 2개 워커 노드, 각각 2개 볼륨)
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: minio-local-pv-worker-1
-spec:
-  capacity:
-    storage: 50Gi
-  accessModes:
-  - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Delete
-  storageClassName: minio-local-storage
-  local:
-    path: /mnt/minio-data/disk1
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - key: kubernetes.io/hostname
-          operator: In
-          values:
-          - worker  # 실제 워커 노드명으로 변경
-EOF
+# 워커 노드 수 확인
+WORKER_COUNT=$(kubectl get nodes --no-headers -l '!node-role.kubernetes.io/control-plane' | wc -l)
 
-# 2. 워커 노드에 스토리지 디렉토리 생성
-# (각 워커 노드에서 실행)
-sudo mkdir -p /mnt/minio-data/disk1 /mnt/minio-data/disk2
-sudo chown -R 1000:1000 /mnt/minio-data/
-```
-
-#### MinIO Tenant 설정
-```bash
-cat << EOF > minio-tenant-multi-node-local.yaml
+cat << EOF > minio-tenant.yaml
 apiVersion: minio.min.io/v2
 kind: Tenant
 metadata:
@@ -490,9 +337,6 @@ metadata:
     environment: production
     storage-type: local-attached
   annotations:
-    prometheus.io/path: /minio/v2/metrics/cluster
-    prometheus.io/port: "9000"
-    prometheus.io/scrape: "true"
     minio.min.io/storage-type: "locally-attached"
     minio.min.io/deployment-type: "distributed"
 spec:
@@ -511,8 +355,8 @@ spec:
   ## MinIO 권장: 다중 노드 분산 배포
   pools:
   - name: pool-0
-    servers: 2                    # 워커 노드 수에 맞게 조정
-    volumesPerServer: 2           # 노드당 2개 로컬 볼륨
+    servers: ${WORKER_COUNT}
+    volumesPerServer: 2
     volumeClaimTemplate:
       metadata:
         name: data
@@ -523,10 +367,10 @@ spec:
         - ReadWriteOnce
         resources:
           requests:
-            storage: 50Gi         # 로컬 PV 크기와 일치
-        storageClassName: minio-local-storage  # MinIO 최적화 스토리지 클래스
+            storage: 50Gi
+        storageClassName: minio-local-storage
     
-    ## 워커 노드에만 배포 (Control Plane 제외)
+    ## 워커 노드에만 배포
     affinity:
       nodeAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
@@ -534,7 +378,7 @@ spec:
           - matchExpressions:
             - key: node-role.kubernetes.io/control-plane
               operator: DoesNotExist
-      ## 노드별 분산 배치 (MinIO 권장)
+      ## 노드별 분산 배치
       podAntiAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
         - labelSelector:
@@ -545,7 +389,6 @@ spec:
               - minio-tenant
           topologyKey: kubernetes.io/hostname
     
-    ## 로컬 스토리지 최적화 리소스 설정
     resources:
       requests:
         memory: 4Gi
@@ -557,9 +400,9 @@ spec:
     ## 로컬 스토리지 최적화 환경 변수
     env:
     - name: MINIO_STORAGE_CLASS_STANDARD
-      value: "EC:2"               # 4개 드라이브로 EC:2 설정
+      value: "EC:2"
     - name: MINIO_API_REQUESTS_MAX
-      value: "1600"               # 로컬 스토리지 최적화
+      value: "1600"
   
   mountPath: /export
   subPath: /data
@@ -567,317 +410,114 @@ spec:
 EOF
 ```
 
-### 🌐 Option 3: 다중 노드 환경 - 분산 스토리지
-
-**특징**: 고가용성, 자동 복제, 관리 편의성
-
-#### Longhorn 사용 예시
-```bash
-# 1. Longhorn 설치
-kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.5.3/deploy/longhorn.yaml
-
-# 2. 기본 스토리지 클래스로 설정
-kubectl patch storageclass longhorn -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
-
-# 3. MinIO Tenant 설정
-cat << EOF > minio-tenant-multi-node-distributed.yaml
-apiVersion: minio.min.io/v2
-kind: Tenant
-metadata:
-  name: minio-tenant
-  namespace: minio-tenant
-  labels:
-    app: minio
-    environment: production
-spec:
-  configuration:
-    name: minio-creds-secret
-  
-  features:
-    bucketDNS: false
-    domains: {}
-  
-  users:
-    - name: storage-user
-  
-  podManagementPolicy: Parallel
-  
-  pools:
-  - servers: 4
-    name: pool-0
-    volumesPerServer: 2
-    volumeClaimTemplate:
-      metadata:
-        name: data
-      spec:
-        accessModes:
-        - ReadWriteOnce
-        resources:
-          requests:
-            storage: 50Gi
-        storageClassName: longhorn    # 또는 rook-ceph-block
-    
-    ## 노드 분산 배치
-    affinity:
-      podAntiAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 100
-          podAffinityTerm:
-            labelSelector:
-              matchExpressions:
-              - key: v1.min.io/tenant
-                operator: In
-                values:
-                - minio-tenant
-            topologyKey: kubernetes.io/hostname
-    
-    resources:
-      requests:
-        memory: 2Gi
-        cpu: 1000m
-      limits:
-        memory: 4Gi
-        cpu: 2000m
-  
-  mountPath: /export
-  subPath: /data
-  requestAutoCert: false
-EOF
-```
-
-### 🔧 환경 자동 감지 및 선택
+### 🔍 생성된 YAML 확인
 
 ```bash
-# 환경 자동 감지 스크립트
-NODE_COUNT=$(kubectl get nodes --no-headers | wc -l)
-WORKER_COUNT=$(kubectl get nodes --no-headers -l '!node-role.kubernetes.io/control-plane' | wc -l)
-
-echo "=== 환경 감지 결과 ==="
-echo "전체 노드 수: $NODE_COUNT"
-echo "워커 노드 수: $WORKER_COUNT"
-echo ""
-
-if [ $WORKER_COUNT -eq 0 ]; then
-    echo "🔧 단일 노드 환경 (Control Plane에서 워크로드 실행)"
-    echo "권장: minio-tenant-single-node.yaml"
-    cp minio-tenant-single-node.yaml minio-tenant.yaml
-elif [ $WORKER_COUNT -eq 1 ]; then
-    echo "🔧 단일 워커 노드 환경"
-    echo "권장: minio-tenant-single-node.yaml"
-    cp minio-tenant-single-node.yaml minio-tenant.yaml
-else
-    echo "🏢 다중 노드 환경 감지"
-    echo "MinIO 권장: 로컬 연결 스토리지 사용"
-    echo ""
-    echo "스토리지 클래스 옵션:"
-    echo "1) minio-local-storage (MinIO 권장, 최고 성능) ⭐⭐⭐⭐⭐"
-    echo "2) longhorn (고가용성, 사용 편의성) ⭐⭐⭐"
-    echo "3) rook-ceph (엔터프라이즈급) ⭐⭐⭐"
-    echo ""
-    echo "기본값: minio-tenant-multi-node-local.yaml (MinIO 권장)"
-    cp minio-tenant-multi-node-local.yaml minio-tenant.yaml
-fi
-
-echo "선택된 설정: minio-tenant.yaml"
-```
-
-### 📚 YAML 구성 요소 설명
-
-**메타데이터**:
-- `apiVersion`: minio.min.io/v2 (MinIO Operator API 버전)
-- `kind`: Tenant (리소스 유형)
-- `name`: minio-tenant (Tenant 이름)
-- `namespace`: minio-tenant (배포 네임스페이스)
-
-**스펙 (spec)**:
-- `configuration`: 인증 정보 시크릿 참조
-- `pools`: MinIO 서버 풀 정의
-- `mountPath`: 컨테이너 내 마운트 경로
-- `subPath`: 실제 데이터 저장 하위 경로
-- `requestAutoCert`: TLS 인증서 자동 생성 (false = HTTP)
-
-**풀 설정 (pools)**:
-- `servers`: 서버 수 (단일 노드: 1, 다중 노드: 워커 노드 수)
-- `name`: pool-0 (풀 이름)
-- `volumesPerServer`: 서버당 볼륨 수
-- `volumeClaimTemplate`: PVC 템플릿 정의
-
-**볼륨 클레임 템플릿**:
-- `accessModes`: ReadWriteOnce (단일 노드 읽기/쓰기)
-- `storage`: 볼륨당 크기
-- `storageClassName`: 환경에 맞는 스토리지 클래스
-
-### 🎯 MinIO 권장사항 준수 체크리스트
-
-- [ ] **로컬 연결 스토리지 사용** (다중 노드 환경)
-- [ ] **워커 노드 전용 배포** (Control Plane 제외)
-- [ ] **노드별 분산 배치** (Anti-Affinity 설정)
-- [ ] **직접 디스크 액세스** (네트워크 스토리지 회피)
-- [ ] **적절한 Erasure Coding** (EC:2 또는 EC:4)
-- [ ] **성능 최적화 리소스** (CPU/메모리 적절 할당)
-
-### 📚 YAML 구성 요소 설명
-
-**메타데이터**:
-- `apiVersion`: minio.min.io/v2 (MinIO Operator API 버전)
-- `kind`: Tenant (리소스 유형)
-- `name`: minio-tenant (Tenant 이름)
-- `namespace`: minio-tenant (배포 네임스페이스)
-
-**스펙 (spec)**:
-- `image`: MinIO 컨테이너 이미지 버전
-- `credsSecret`: 인증 정보 시크릿 참조
-- `pools`: MinIO 서버 풀 정의
-- `mountPath`: 컨테이너 내 마운트 경로
-- `subPath`: 실제 데이터 저장 하위 경로
-- `requestAutoCert`: TLS 인증서 자동 생성 (false = HTTP)
-
-**풀 설정 (pools)**:
-- `servers`: 1 (단일 노드 환경용)
-- `name`: pool-0 (풀 이름)
-- `volumesPerServer`: 4 (서버당 볼륨 수)
-- `volumeClaimTemplate`: PVC 템플릿 정의
-
-**볼륨 클레임 템플릿**:
-- `accessModes`: ReadWriteOnce (단일 노드 읽기/쓰기)
-- `storage`: 1Gi (볼륨당 크기)
-- `storageClassName`: local-path (스토리지 클래스)
-
-### 🔍 YAML 파일 확인
-```bash
+echo "=== 생성된 MinIO Tenant 설정 ==="
 cat minio-tenant.yaml
 ```
 
 ### 🛑 체크포인트
-YAML 파일이 올바르게 생성되었는지 확인하세요.
+환경에 맞는 MinIO Tenant YAML 파일이 생성되었는지 확인하세요.
 
 ---
 
-## Step 7: Tenant 배포 및 실시간 프로비저닝 관찰
+## Step 5: 동적 프로비저닝 관찰 준비
 
 ### 💡 개념 설명
-이제 실제 Tenant를 배포하면서 동적 프로비저닝 과정을 실시간으로 관찰합니다. **환경에 따라 선택한 YAML 파일을 사용**합니다.
+
+Tenant 배포 전에 현재 상태를 확인하여 동적 프로비저닝 과정을 관찰할 준비를 합니다.
+
+### 🔍 배포 전 상태 확인
+
+```bash
+echo "=== 배포 전 상태 확인 ==="
+
+echo "1. 현재 PV 상태:"
+kubectl get pv
+
+echo -e "\n2. 현재 PVC 상태:"
+kubectl get pvc -n minio-tenant
+
+echo -e "\n3. 현재 Pod 상태:"
+kubectl get pods -n minio-tenant
+```
+
+### 📊 실시간 모니터링 설정
+
+별도 터미널에서 실시간 모니터링을 위해 다음 명령어를 실행하세요:
+
+**터미널 1 (PV 모니터링)**:
+```bash
+watch -n 2 'kubectl get pv'
+```
+
+**터미널 2 (PVC 모니터링)**:
+```bash
+watch -n 2 'kubectl get pvc -n minio-tenant'
+```
+
+**터미널 3 (Pod 모니터링)**:
+```bash
+watch -n 2 'kubectl get pods -n minio-tenant -o wide'
+```
+
+### 🛑 체크포인트
+모니터링 창이 준비되고 현재 상태가 확인되었는지 점검하세요.
+
+---
+
+## Step 6: MinIO Tenant 배포 및 실시간 관찰
+
+### 💡 개념 설명
+
+이제 실제 Tenant를 배포하면서 동적 프로비저닝 과정을 실시간으로 관찰합니다.
 
 **예상 진행 순서**:
 1. **Tenant 생성**: CRD 리소스 생성
 2. **PVC 생성**: 환경에 따른 PVC 생성 (Pending 상태)
 3. **StatefulSet 생성**: MinIO Pod 정의
 4. **Pod 스케줄링**: Pod가 노드에 배치 결정
-5. **PV 자동 생성**: 프로비저너가 PV 생성 (또는 기존 Local PV 바인딩)
-6. **바인딩**: PVC와 PV 연결
-7. **Pod 시작**: 볼륨 마운트 후 MinIO 시작
+5. **PV 바인딩**: PVC와 PV 연결 (Local Storage) 또는 PV 자동 생성
+6. **Pod 시작**: 볼륨 마운트 후 MinIO 시작
 
-### 🔍 환경별 Tenant 배포 실행
+### 🚀 Tenant 배포 실행
 
-#### 단일 노드 환경
 ```bash
-# 단일 노드용 YAML 사용
-kubectl apply -f minio-tenant-single-node.yaml
-```
-
-#### 다중 노드 환경 (MinIO 권장 로컬 스토리지)
-```bash
-# 다중 노드 로컬 스토리지용 YAML 사용
-kubectl apply -f minio-tenant-multi-node-local.yaml
-```
-
-#### 다중 노드 환경 (분산 스토리지)
-```bash
-# 분산 스토리지용 YAML 사용
-kubectl apply -f minio-tenant-multi-node-distributed.yaml
-```
-
-#### 자동 선택된 환경
-```bash
-# 환경 자동 감지로 생성된 YAML 사용
+echo "=== MinIO Tenant 배포 시작 ==="
 kubectl apply -f minio-tenant.yaml
 ```
 
-### ✅ 예상 출력
-```
-tenant.minio.min.io/minio-tenant created
-```
+### 📊 단계별 상태 관찰
 
-### 📊 실시간 관찰 포인트
-
-**1단계: PVC 생성 확인 (즉시)**
+#### 1단계: PVC 생성 확인 (즉시)
 ```bash
 kubectl get pvc -n minio-tenant
 ```
 
 **예상 출력**:
 ```
-NAME           STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   AGE
-data-minio-tenant-pool-0-0   Pending   -        -          -              local-path     5s
-data-minio-tenant-pool-0-1   Pending   -        -          -              local-path     5s
-data-minio-tenant-pool-0-2   Pending   -        -          -              local-path     5s
-data-minio-tenant-pool-0-3   Pending   -        -          -              local-path     5s
+NAME                         STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+data-minio-tenant-pool-0-0   Pending   -        -          -              minio-local-storage     5s
+data-minio-tenant-pool-0-1   Pending   -        -          -              minio-local-storage     5s
+...
 ```
 
-**📚 중요 관찰 사항**:
-- **STATUS: Pending**: 정상 상태! (WaitForFirstConsumer 모드)
-- **VOLUME: -**: 아직 PV가 생성되지 않음
-- **4개 PVC**: volumesPerServer 설정에 따라 생성
-
-**2단계: StatefulSet 생성 확인**
+#### 2단계: StatefulSet 및 Pod 생성 확인
 ```bash
 kubectl get statefulset -n minio-tenant
-```
-
-**예상 출력**:
-```
-NAME                     READY   AGE
-minio-tenant-pool-0      0/1     10s
-```
-
-**3단계: Pod 상태 확인**
-```bash
 kubectl get pods -n minio-tenant
 ```
 
-**예상 출력 (초기)**:
-```
-NAME                       READY   STATUS    RESTARTS   AGE
-minio-tenant-pool-0-0      0/1     Pending   0          15s
-```
-
-**4단계: PV 자동 생성 관찰 (Pod 스케줄링 후)**
+#### 3단계: PV 바인딩 관찰
 ```bash
 kubectl get pv
-```
-
-**예상 출력 (프로비저닝 후)**:
-```
-NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                                      STORAGECLASS   REASON   AGE
-pvc-12345678-1234-1234-1234-123456789012   1Gi        RWO            Delete           Bound    minio-tenant/data-minio-tenant-pool-0-0   local-path              30s
-pvc-23456789-2345-2345-2345-234567890123   1Gi        RWO            Delete           Bound    minio-tenant/data-minio-tenant-pool-0-1   local-path              30s
-pvc-34567890-3456-3456-3456-345678901234   1Gi        RWO            Delete           Bound    minio-tenant/data-minio-tenant-pool-0-2   local-path              30s
-pvc-45678901-4567-4567-4567-456789012345   1Gi        RWO            Delete           Bound    minio-tenant/data-minio-tenant-pool-0-3   local-path              30s
-```
-
-**5단계: PVC 바인딩 확인**
-```bash
 kubectl get pvc -n minio-tenant
 ```
 
-**예상 출력 (바인딩 후)**:
-```
-NAME                         STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
-data-minio-tenant-pool-0-0   Bound    pvc-12345678-1234-1234-1234-123456789012   1Gi        RWO            local-path     1m
-data-minio-tenant-pool-0-1   Bound    pvc-23456789-2345-2345-2345-234567890123   1Gi        RWO            local-path     1m
-data-minio-tenant-pool-0-2   Bound    pvc-34567890-3456-3456-3456-345678901234   1Gi        RWO            local-path     1m
-data-minio-tenant-pool-0-3   Bound    pvc-45678901-4567-4567-4567-456789012345   1Gi        RWO            local-path     1m
-```
-
-**6단계: Pod 실행 확인**
+#### 4단계: Pod 실행 확인
 ```bash
-kubectl get pods -n minio-tenant
-```
-
-**예상 출력 (최종)**:
-```
-NAME                       READY   STATUS    RESTARTS   AGE
-minio-tenant-pool-0-0      1/1     Running   0          2m
+kubectl get pods -n minio-tenant -o wide
 ```
 
 ### 🛑 체크포인트
@@ -885,16 +525,16 @@ minio-tenant-pool-0-0      1/1     Running   0          2m
 
 ---
 
-이것은 Lab 02 가이드의 첫 번째 부분입니다. 계속해서 나머지 단계들을 추가하겠습니다.
-## Step 8: 배포 상태 종합 확인
+## Step 7: 배포 검증 및 서비스 접근
 
 ### 💡 개념 설명
-Tenant 배포가 완료되면 모든 구성 요소의 상태를 종합적으로 확인해야 합니다.
 
-### 🔍 종합 상태 확인 명령어
+배포된 MinIO Tenant의 상태를 종합적으로 확인하고 서비스에 접근합니다.
+
+### 🔍 종합 상태 확인
+
 ```bash
 echo "=== MinIO Tenant 배포 상태 확인 ==="
-echo ""
 
 echo "1. Tenant 리소스:"
 kubectl get tenant -n minio-tenant
@@ -908,312 +548,44 @@ kubectl get pods -n minio-tenant -o wide
 echo -e "\n4. PVC 상태:"
 kubectl get pvc -n minio-tenant
 
-echo -e "\n5. PV 상태:"
-kubectl get pv
-
-echo -e "\n6. 서비스:"
+echo -e "\n5. 서비스:"
 kubectl get service -n minio-tenant
+
+echo -e "\n6. MinIO 로그 확인:"
+kubectl logs -n minio-tenant minio-tenant-pool-0-0 --tail=10
 ```
 
-### ✅ 성공적인 배포 상태
-
-**1. Tenant 리소스**:
-```
-NAME           STATE         AGE
-minio-tenant   Initialized   3m
-```
-
-**2. StatefulSet**:
-```
-NAME                     READY   AGE
-minio-tenant-pool-0      1/1     3m
-```
-
-**3. Pod 상태**:
-```
-NAME                       READY   STATUS    RESTARTS   AGE   IP           NODE
-minio-tenant-pool-0-0      1/1     Running   0          3m    10.244.0.5   minikube
-```
-
-**4. PVC 상태**:
-```
-NAME                         STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
-data-minio-tenant-pool-0-0   Bound    pvc-12345678-1234-1234-1234-123456789012   1Gi        RWO            local-path     3m
-data-minio-tenant-pool-0-1   Bound    pvc-23456789-2345-2345-2345-234567890123   1Gi        RWO            local-path     3m
-data-minio-tenant-pool-0-2   Bound    pvc-34567890-3456-3456-3456-345678901234   1Gi        RWO            local-path     3m
-data-minio-tenant-pool-0-3   Bound    pvc-45678901-4567-4567-4567-456789012345   1Gi        RWO            local-path     3m
-```
-
-**5. 서비스**:
-```
-NAME                        TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
-minio-tenant-console        ClusterIP   10.96.123.45    <none>        9090/TCP   3m
-minio-tenant-hl             ClusterIP   None            <none>        9000/TCP   3m
-```
-
-### 📚 서비스 설명
-- **minio-tenant-console**: MinIO 웹 콘솔 서비스
-- **minio-tenant-hl**: MinIO API 서비스 (Headless)
-
-### 🛑 체크포인트
-모든 구성 요소가 정상 상태인지 확인하세요.
-
----
-
-## Step 9: MinIO Pod 로그 확인
-
-### 💡 개념 설명
-MinIO Pod의 로그를 통해 서버가 정상적으로 시작되었는지 확인합니다.
-
-### 🔍 실행할 명령어
-```bash
-kubectl logs -n minio-tenant minio-tenant-pool-0-0
-```
-
-### ✅ 예상 출력 (정상 시작)
-```
-MinIO Object Storage Server
-Copyright: 2015-2023 MinIO, Inc.
-License: GNU AGPLv3 <https://www.gnu.org/licenses/agpl-3.0.html>
-Version: RELEASE.2025-04-08T15-41-24Z (go1.21.8 linux/amd64)
-
-Status:         4 Online, 0 Offline. 
-API: http://10.244.0.5:9000  http://127.0.0.1:9000   
-Console: http://10.244.0.5:9001 http://127.0.0.1:9001 
-
-Documentation: https://min.io/docs/minio/linux/index.html
-Warning: The standard parity is set to 2. This can lead to data loss.
-```
-
-### 📚 로그 메시지 해석
-- **Status**: 4 Online (4개 볼륨 모두 온라인)
-- **API**: MinIO S3 API 엔드포인트
-- **Console**: MinIO 웹 콘솔 엔드포인트
-- **Warning**: 단일 노드 환경에서의 패리티 경고 (정상)
-
-### 🔍 실시간 로그 모니터링
-```bash
-kubectl logs -n minio-tenant minio-tenant-pool-0-0 -f
-```
-
-### 🚨 문제 해결
-
-#### 문제: "No such file or directory" 오류
-**원인**: 볼륨 마운트 실패
-
-**해결 방법**:
-```bash
-# Pod 상세 정보 확인
-kubectl describe pod -n minio-tenant minio-tenant-pool-0-0
-
-# PVC 상태 재확인
-kubectl get pvc -n minio-tenant
-```
-
-#### 문제: "Permission denied" 오류
-**원인**: 볼륨 권한 문제
-
-**해결 방법**:
-```bash
-# Pod 내부 권한 확인
-kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- ls -la /export0/data/
-```
-
-### 🛑 체크포인트
-MinIO 서버가 정상적으로 시작되고 "4 Online" 상태인지 확인하세요.
-
----
-
-## Step 10: 실제 스토리지 경로 확인
-
-### 💡 개념 설명
-동적 프로비저닝으로 생성된 PV의 실제 저장 위치를 확인하여 데이터가 어디에 저장되는지 이해합니다.
-
-### 🔍 PV 상세 정보 확인
-```bash
-kubectl describe pv | grep -A 5 -B 5 "local-path"
-```
-
-### ✅ 예상 출력
-```
-Name:              pvc-12345678-1234-1234-1234-123456789012
-Labels:            <none>
-Annotations:       pv.kubernetes.io/provisioned-by: rancher.io/local-path
-Finalizers:        [kubernetes.io/pv-protection]
-StorageClass:      local-path
-Status:            Bound
-Claim:             minio-tenant/data-minio-tenant-pool-0-0
-Reclaim Policy:    Delete
-Access Modes:      RWO
-VolumeMode:        Filesystem
-Capacity:          1Gi
-Node Affinity:     
-  Required Terms:  
-    Term 0:        kubernetes.io/hostname in [minikube]
-Message:           
-Source:
-    Type:          HostPath (bare host directory volume)
-    Path:          /opt/local-path-provisioner/pvc-12345678-1234-1234-1234-123456789012_minio-tenant_data-minio-tenant-pool-0-0
-    HostPathType:  DirectoryOrCreate
-```
-
-### 📚 중요 정보 해석
-- **Path**: 실제 호스트 경로
-- **HostPathType**: DirectoryOrCreate (디렉토리 자동 생성)
-- **Node Affinity**: 특정 노드에 바인딩됨
-
-### 🔍 실제 파일시스템 확인 (단일 노드 환경)
-```bash
-# 노드에 직접 접근 가능한 경우
-sudo ls -la /opt/local-path-provisioner/
-
-# Minikube 환경인 경우
-minikube ssh
-sudo ls -la /opt/local-path-provisioner/
-```
-
-### ✅ 예상 출력
-```
-drwxr-xr-x 2 root root 4096 Aug 10 10:30 pvc-12345678-1234-1234-1234-123456789012_minio-tenant_data-minio-tenant-pool-0-0
-drwxr-xr-x 2 root root 4096 Aug 10 10:30 pvc-23456789-2345-2345-2345-234567890123_minio-tenant_data-minio-tenant-pool-0-1
-drwxr-xr-x 2 root root 4096 Aug 10 10:30 pvc-34567890-3456-3456-3456-345678901234_minio-tenant_data-minio-tenant-pool-0-2
-drwxr-xr-x 2 root root 4096 Aug 10 10:30 pvc-45678901-4567-4567-4567-456789012345_minio-tenant_data-minio-tenant-pool-0-3
-```
-
-### 🔍 MinIO 볼륨 구조 확인
+### 🌐 서비스 접근 설정
 
 ```bash
-# 첫 번째 볼륨 구조 확인 (대표 예시)
-kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- ls -la /export0/data/
-```
+echo "=== 포트 포워딩 설정 ==="
 
-### ✅ 예상 출력
-```
-total 12
-drwxr-xr-x 3 1000 1000 4096 Aug 11 06:16 .
-drwxrwxrwx 3 root root 4096 Aug 11 06:16 ..
-drwxr-xr-x 7 1000 1000 4096 Aug 11 06:21 .minio.sys
-```
-
-### 📚 볼륨 구조 이해
-
-**다중 볼륨 구성**:
-- ✅ **4개 볼륨**: `/export0`, `/export1`, `/export2`, `/export3`
-- ✅ **동일한 구조**: 모든 볼륨이 동일한 `.minio.sys` 구조
-- ✅ **Erasure Coding**: 데이터가 4개 볼륨에 분산 저장
-- ✅ **권한**: `1000:1000` (MinIO 컨테이너 사용자)
-
-**추가 볼륨 확인** (선택사항):
-```bash
-# 다른 볼륨들도 동일한 구조를 가짐
-kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- ls -la /export1/data/
-kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- ls -la /export2/data/
-kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- ls -la /export3/data/
-```
-
-### 🛑 체크포인트
-실제 스토리지 경로와 MinIO 데이터 구조를 확인했는지 점검하세요.
-
----
-
-## Step 11: MinIO 서비스 접근 설정
-
-### 💡 개념 설명
-배포된 MinIO에 접근하기 위해 포트 포워딩을 설정합니다.
-
-### 🔍 서비스 확인
-```bash
-kubectl get service -n minio-tenant
-```
-
-### ✅ 예상 출력
-```
-NAME                        TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
-minio-tenant-console        ClusterIP   10.96.123.45    <none>        9090/TCP   5m
-minio-tenant-hl             ClusterIP   None            <none>        9000/TCP   5m
-```
-
-### 🔍 MinIO API 포트 포워딩
-```bash
+# MinIO API 포트 포워딩
 kubectl port-forward -n minio-tenant svc/minio-tenant-hl 9000:9000 &
-```
 
-### 🔍 MinIO Console 포트 포워딩
-```bash
+# MinIO Console 포트 포워딩
 kubectl port-forward -n minio-tenant svc/minio-tenant-console 9001:9090 &
+
+echo "포트 포워딩 설정 완료"
+echo "MinIO API: http://localhost:9000"
+echo "MinIO Console: http://localhost:9001"
+echo "사용자명: admin"
+echo "패스워드: password123"
 ```
 
-### ✅ 포트 포워딩 확인
-```
-Forwarding from 127.0.0.1:9000 -> 9000
-Forwarding from [::1]:9000 -> 9000
-Forwarding from 127.0.0.1:9001 -> 9090
-Forwarding from [::1]:9001 -> 9090
-```
+### 🔍 연결 테스트
 
-### 🌐 접근 주소
-- **MinIO API**: http://localhost:9000
-- **MinIO Console**: http://localhost:9001
-
-### 🔑 로그인 정보
-- **사용자명**: admin
-- **패스워드**: password123
-
-### 🛑 체크포인트
-포트 포워딩이 설정되고 접근 주소가 준비되었는지 확인하세요.
-
----
-
-## Step 12: 배포 검증 및 기본 테스트
-
-### 💡 개념 설명
-MinIO가 정상적으로 작동하는지 기본적인 연결 테스트를 수행합니다.
-
-### 🔍 MinIO API 연결 테스트
 ```bash
+echo "=== MinIO API 연결 테스트 ==="
 curl -I http://localhost:9000/minio/health/live
 ```
 
-### ✅ 예상 출력
-```
-HTTP/1.1 200 OK
-Accept-Ranges: bytes
-Content-Length: 0
-Content-Security-Policy: block-all-mixed-content
-Server: MinIO
-Strict-Transport-Security: max-age=31536000; includeSubDomains
-Vary: Origin
-X-Amz-Request-Id: 17C8B2F2F8A2B8E4
-X-Content-Type-Options: nosniff
-X-Xss-Protection: 1; mode=block
-Date: Thu, 10 Aug 2023 10:35:00 GMT
-```
-
-### 📚 응답 해석
-- **HTTP/1.1 200 OK**: 서버 정상 응답
-- **Server: MinIO**: MinIO 서버 확인
-- **X-Amz-Request-Id**: AWS S3 호환 헤더
-
-### 🔍 MinIO Console 접근 테스트
-브라우저에서 http://localhost:9001 접근:
-
-1. **로그인 페이지**: MinIO 로고와 로그인 폼 표시
-2. **사용자명**: admin 입력
-3. **패스워드**: password123 입력
-4. **로그인**: 대시보드 접근 성공
-
-### 📊 Console 대시보드 확인 사항
-- **서버 상태**: Online 표시
-- **드라이브 수**: 4개 드라이브 표시
-- **용량**: 총 4Gi 용량 표시
-- **버킷**: 빈 버킷 목록 (정상)
-
 ### 🛑 체크포인트
-API 연결 테스트가 성공하고 웹 콘솔에 로그인할 수 있는지 확인하세요.
+MinIO API가 정상 응답하고 웹 콘솔에 접근할 수 있는지 확인하세요.
 
 ---
 
-## 🎯 배포 성공 확인 및 최종 검증
+## 🎯 배포 성공 확인 및 학습 성과
 
 ### ✅ 성공 기준 체크리스트
 
@@ -1221,115 +593,49 @@ API 연결 테스트가 성공하고 웹 콘솔에 로그인할 수 있는지 �
 - [ ] **네임스페이스**: minio-tenant가 Active 상태
 - [ ] **시크릿**: minio-creds-secret 생성됨
 - [ ] **Tenant**: minio-tenant 리소스가 Initialized 상태
-- [ ] **StatefulSet**: minio-tenant-pool-0이 1/1 Ready
-- [ ] **Pod**: minio-tenant-pool-0-0이 Running 상태
+- [ ] **StatefulSet**: 모든 Pod가 Ready 상태
+- [ ] **Pod**: 모든 MinIO Pod가 Running 상태
 
 **스토리지 레벨**:
-- [ ] **PVC**: 4개 PVC가 모두 Bound 상태
-- [ ] **PV**: 4개 PV가 자동 생성되고 Bound 상태
+- [ ] **PVC**: 모든 PVC가 Bound 상태
+- [ ] **PV**: 모든 PV가 Bound 상태 (또는 자동 생성)
 - [ ] **동적 프로비저닝**: WaitForFirstConsumer 모드 정상 동작
 - [ ] **실제 경로**: 호스트 파일시스템에 데이터 디렉토리 생성
 
 **애플리케이션 레벨**:
-- [ ] **MinIO 로그**: "4 Online, 0 Offline" 상태
+- [ ] **MinIO 로그**: "X Online, 0 Offline" 상태
 - [ ] **서비스**: API 및 Console 서비스 생성
 - [ ] **포트 포워딩**: 9000, 9001 포트 접근 가능
 - [ ] **API 테스트**: Health check 응답 정상
 - [ ] **웹 콘솔**: 로그인 및 대시보드 접근 성공
 
-### 🔍 최종 상태 확인 명령어
-```bash
-echo "=== MinIO Tenant 최종 배포 상태 ==="
-echo ""
+### 🧠 학습 성과 확인
 
-echo "✅ 1. Tenant 상태:"
-kubectl get tenant -n minio-tenant -o wide
+#### 📋 이해도 점검 질문
 
-echo -e "\n✅ 2. 전체 리소스 상태:"
-kubectl get all -n minio-tenant
+1. **환경별 스토리지 클래스 선택 기준을 설명할 수 있나요?**
+2. **MinIO가 로컬 연결 스토리지를 권장하는 이유를 알고 있나요?**
+3. **WaitForFirstConsumer 모드의 동작 원리를 이해했나요?**
+4. **다중 노드 환경에서 Anti-Affinity 설정의 중요성을 알고 있나요?**
+5. **동적 프로비저닝과 정적 프로비저닝의 차이점을 설명할 수 있나요?**
 
-echo -e "\n✅ 3. 스토리지 상태:"
-kubectl get pvc,pv -n minio-tenant
+#### 🎓 핵심 개념 정리
 
-echo -e "\n✅ 4. MinIO 서버 상태:"
-kubectl logs -n minio-tenant minio-tenant-pool-0-0 --tail=5
+**환경별 최적화**:
+- 단일 노드: 개발/테스트 환경, 리소스 효율성
+- 다중 노드: 프로덕션 환경, MinIO 권장 로컬 스토리지
+- 분산 스토리지: 고가용성, 자동 복제
 
-echo -e "\n✅ 5. 접근 정보:"
-echo "MinIO API: http://localhost:9000"
-echo "MinIO Console: http://localhost:9001"
-echo "사용자명: admin"
-echo "패스워드: password123"
-```
-
----
-
-## 🧠 학습 성과 확인
-
-### 📋 이해도 점검 질문
-
-1. **WaitForFirstConsumer 모드에서 PVC가 Pending 상태인 것이 정상인 이유를 설명할 수 있나요?**
-2. **동적 프로비저닝 과정에서 PV가 언제 생성되는지 알고 있나요?**
-3. **MinIO Tenant에서 volumesPerServer 설정의 의미를 이해했나요?**
-4. **Erasure Coding이 어떻게 데이터를 보호하는지 설명할 수 있나요?**
-5. **실제 데이터가 호스트 파일시스템의 어디에 저장되는지 알고 있나요?**
-
-### 🎓 핵심 개념 정리
+**MinIO 권장사항**:
+- 로컬 연결 스토리지 사용
+- 워커 노드 전용 배포
+- 노드별 분산 배치
+- 직접 디스크 액세스
 
 **동적 프로비저닝**:
-- PVC 생성 시 자동으로 PV 생성
-- WaitForFirstConsumer 모드로 최적화된 배치
-- 프로비저너가 실제 스토리지 할당 담당
-
-**MinIO Tenant**:
-- CRD를 통한 선언적 정의
-- Operator가 복잡한 리소스 자동 생성
-- StatefulSet 기반의 상태 유지 애플리케이션
-
-**Erasure Coding**:
-- 데이터를 여러 조각으로 분산 저장
-- 일부 드라이브 장애 시에도 데이터 복구 가능
-- 스토리지 효율성과 안정성의 균형
-
-**Kubernetes 네이티브 관리**:
-- kubectl로 MinIO 클러스터 관리
-- 네임스페이스를 통한 격리
-- 시크릿을 통한 보안 정보 관리
-
----
-
-## 🚨 문제 해결 가이드
-
-### 자주 발생하는 문제들
-
-| 문제 | 증상 | 원인 | 해결 방법 |
-|------|------|------|-----------|
-| PVC Pending | PVC가 계속 Pending | 정상 동작 (WaitForFirstConsumer) | Pod 생성 대기 |
-| Pod Pending | Pod가 스케줄링되지 않음 | 노드 taint, 리소스 부족 | taint 제거, 리소스 확인 |
-| 볼륨 마운트 실패 | Pod가 ContainerCreating | PV 생성 실패, 권한 문제 | PV 상태 확인, 권한 수정 |
-| MinIO 시작 실패 | Pod가 CrashLoopBackOff | 설정 오류, 볼륨 문제 | 로그 확인, 볼륨 검증 |
-| 포트 접근 불가 | 연결 거부 | 포트 포워딩 실패 | 포트 포워딩 재설정 |
-
-### 🔧 디버깅 명령어 모음
-
-```bash
-# 전체 상태 확인
-kubectl get all -n minio-tenant
-
-# Pod 상세 정보
-kubectl describe pod -n minio-tenant minio-tenant-pool-0-0
-
-# PVC 상태 확인
-kubectl describe pvc -n minio-tenant
-
-# 이벤트 확인
-kubectl get events -n minio-tenant --sort-by='.lastTimestamp'
-
-# 로그 확인
-kubectl logs -n minio-tenant minio-tenant-pool-0-0
-
-# 리소스 사용량 확인 (metrics-server 필요)
-kubectl top pod -n minio-tenant
-```
+- WaitForFirstConsumer 모드
+- Pod 스케줄링 시점의 PV 생성/바인딩
+- 최적화된 노드 배치
 
 ---
 
@@ -1343,12 +649,8 @@ MinIO Tenant 배포가 성공적으로 완료되었습니다! 이제 실제 MinI
 - 실제 데이터 업로드/다운로드 테스트
 - 데이터 무결성 검증 및 실제 저장 위치 확인
 
-### 🔗 관련 문서
-- [Lab 3 Lab Guide: MinIO Client 및 기본 사용법](LAB-03-GUIDE.md)
-- [MinIO Tenant 상세 개념](LAB-02-CONCEPTS.md)
-- [동적 프로비저닝 심화 학습](LAB-00-CONCEPTS.md)
-
 ### 🧹 정리 명령어 (필요한 경우)
+
 ```bash
 # Tenant 제거 (다음 Lab 진행 전에는 실행하지 마세요)
 kubectl delete tenant minio-tenant -n minio-tenant
@@ -1360,18 +662,4 @@ pkill -f "kubectl port-forward"
 
 ---
 
-축하합니다! MinIO Tenant가 성공적으로 배포되었고, 동적 프로비저닝의 전체 과정을 실제로 관찰했습니다. 이제 Kubernetes에서 MinIO를 네이티브 방식으로 운영할 수 있는 기반이 완전히 구축되었습니다.
-
----
-
-## 📋 기준 버전 정보
-
-이 가이드는 다음 버전을 기준으로 작성되었습니다:
-
-- **MinIO Operator**: v7.1.1 (2025-04-23 릴리스)
-- **MinIO Server**: RELEASE.2025-04-08T15-41-24Z
-- **MinIO Client**: RELEASE.2025-07-23T15-54-02Z
-- **Kubernetes**: 1.20+
-- **CRD API**: minio.min.io/v2
-
-**공식 저장소**: https://github.com/minio/operator
+축하합니다! 환경에 최적화된 MinIO Tenant가 성공적으로 배포되었고, MinIO의 권장사항을 준수한 고성능 객체 스토리지 시스템이 구축되었습니다.
