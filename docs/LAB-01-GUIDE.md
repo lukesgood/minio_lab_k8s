@@ -24,16 +24,10 @@
 
 ---
 
-## Step 1: 사전 요구사항 확인
+## Step 1: 클러스터 연결 확인
 
 ### 💡 개념 설명
-MinIO Operator 설치 전 클러스터 상태를 재확인합니다:
-
-**확인 항목**:
-- **클러스터 연결**: kubectl이 정상적으로 클러스터와 통신
-- **권한**: Operator 설치에 필요한 클러스터 관리자 권한
-- **리소스**: Operator 실행에 필요한 최소 리소스
-- **네트워크**: 컨테이너 이미지 다운로드를 위한 인터넷 연결
+MinIO Operator 설치 전 클러스터 상태를 재확인합니다.
 
 ### 🔍 실행할 명령어
 ```bash
@@ -46,63 +40,38 @@ Kubernetes control plane is running at https://127.0.0.1:6443
 CoreDNS is running at https://127.0.0.1:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
 ```
 
-### 📚 출력 정보 해석
-- **control plane running**: API 서버가 정상 작동
-- **CoreDNS running**: 클러스터 내부 DNS 서비스 정상
-- 이 두 서비스가 정상이면 Operator 설치 가능
-
-### 🚨 문제 해결
-문제 발생 시 Lab 0으로 돌아가서 환경 재검증을 수행하세요.
-
 ### 🛑 체크포인트
-클러스터 정보가 정상적으로 출력되는지 확인하세요.
+클러스터 연결이 정상적으로 작동하는지 확인하세요.
 
 ---
 
-## Step 2: 노드 상태 및 환경 유형 확인
+## Step 2: 노드 상태 확인
 
 ### 💡 개념 설명
-노드 상태와 환경 유형에 따라 Operator 설치 전략이 달라집니다:
-
-**환경 유형별 특징**:
-- **단일 노드**: 간단한 설정, 리소스 효율적, 학습용
-- **다중 노드**: 고가용성, 확장성, 프로덕션용
+Operator 배포 전 노드 상태와 환경 유형을 파악합니다.
 
 ### 🔍 실행할 명령어
 ```bash
-kubectl get nodes -o wide
+kubectl get nodes
 ```
 
 ### ✅ 예상 출력
-
-**단일 노드 환경**:
+**단일 노드 환경:**
 ```
-NAME       STATUS   ROLES           AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
-minikube   Ready    control-plane   5d    v1.28.3   192.168.49.2  <none>        Ubuntu 22.04.3 LTS   5.15.0-78-generic   docker://24.0.4
-```
-
-**다중 노드 환경**:
-```
-NAME           STATUS   ROLES           AGE   VERSION   INTERNAL-IP    EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
-master-node    Ready    control-plane   5d    v1.28.3   10.0.0.10      <none>        Ubuntu 22.04.3 LTS   5.15.0-78-generic   containerd://1.6.12
-worker-node-1  Ready    <none>          5d    v1.28.3   10.0.0.11      <none>        Ubuntu 22.04.3 LTS   5.15.0-78-generic   containerd://1.6.12
-worker-node-2  Ready    <none>          5d    v1.28.3   10.0.0.12      <none>        Ubuntu 22.04.3 LTS   5.15.0-78-generic   containerd://1.6.12
+NAME          STATUS   ROLES           AGE     VERSION
+luke-870z5g   Ready    control-plane   2d23h   v1.28.15
 ```
 
-### 📚 출력 정보 해석
-- **STATUS**: 모든 노드가 "Ready" 상태여야 함
-- **ROLES**: control-plane(마스터) vs <none>(워커) 구분
-- **VERSION**: 모든 노드의 Kubernetes 버전 확인
-- **INTERNAL-IP**: 클러스터 내부 통신 주소
-
-### 🔍 환경 유형 판별
-```bash
-# 노드 수 확인
-kubectl get nodes --no-headers | wc -l
+**다중 노드 환경:**
+```
+NAME       STATUS   ROLES           AGE   VERSION
+master     Ready    control-plane   1d    v1.28.15
+worker-1   Ready    <none>          1d    v1.28.15
+worker-2   Ready    <none>          1d    v1.28.15
 ```
 
-**결과 해석**:
-- **1개**: 단일 노드 환경 → 특별 설정 필요
+### 📚 환경 유형 판단
+- **1개 노드**: 단일 노드 환경 → Anti-Affinity 조정 필요
 - **2개 이상**: 다중 노드 환경 → 표준 설정 사용
 
 ### 🛑 체크포인트
@@ -148,60 +117,31 @@ Kubernetes에서 복잡한 애플리케이션을 자동화하여 관리하는 �
 ┌─────────────────────────────────────────────────────────────┐
 │                    MinIO Operator                           │
 ├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │
-│  │    CRDs     │    │ Controller  │    │   Console   │     │
-│  │             │    │             │    │             │     │
-│  │ • Tenant    │───▶│ • Reconcile │───▶│ • Web UI    │     │
-│  │ • Policy    │    │ • Monitor   │    │ • Management│     │
-│  │ • User      │    │ • Heal      │    │ • Dashboard │     │
-│  └─────────────┘    └─────────────┘    └─────────────┘     │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                 Kubernetes Resources                        │
+│  Controller (Deployment)                                   │
+│  ├── Tenant CRD 관리                                       │
+│  ├── 자동 스케일링                                         │
+│  ├── 업그레이드 관리                                       │
+│  └── 장애 복구                                             │
 ├─────────────────────────────────────────────────────────────┤
-│  StatefulSet │ Services │ ConfigMaps │ Secrets │ PVCs      │
+│  Services                                                   │
+│  ├── operator (4221/TCP) - 내부 API                       │
+│  └── sts (4223/TCP) - Security Token Service              │
 └─────────────────────────────────────────────────────────────┘
 ```
-
-### 🔍 MinIO Operator의 주요 기능
-
-**1. 자동화된 배포**
-- Tenant 리소스 정의만으로 전체 MinIO 클러스터 배포
-- 복잡한 StatefulSet, Service, ConfigMap 자동 생성
-
-**2. 라이프사이클 관리**
-- 자동 업그레이드 및 롤백
-- 설정 변경 시 자동 재배포
-- 장애 시 자동 복구
-
-**3. 스토리지 관리**
-- 동적 볼륨 프로비저닝
-- Erasure Coding 자동 설정
-- 스토리지 확장 자동화
-
-**4. 보안 관리**
-- TLS 인증서 자동 생성 및 갱신
-- IAM 정책 자동 적용
-- 시크릿 자동 관리
-
-### 🛑 체크포인트
-Operator 패턴의 개념과 MinIO Operator의 역할을 이해했는지 확인하세요.
 
 ---
 
 ## Step 4: MinIO Operator 설치
 
 ### 💡 개념 설명
-MinIO Operator는 kustomize를 통해 설치할 수 있습니다. 이 방법은 모든 필수 리소스를 자동으로 설치합니다:
+MinIO Operator는 kustomize를 통해 설치할 수 있습니다. 이 방법은 모든 필수 리소스를 자동으로 설치합니다.
 
 **자동 설치되는 리소스**:
 - **네임스페이스**: minio-operator 자동 생성
 - **CRDs**: Tenant, Policy 등의 사용자 정의 리소스
 - **RBAC**: 서비스 계정, 역할, 바인딩
 - **Deployment**: Operator 컨트롤러 Pod
-- **Service**: Operator 웹 콘솔 서비스
+- **Service**: Operator API 및 STS 서비스
 
 ### 🔍 실행할 명령어
 ```bash
@@ -217,7 +157,8 @@ serviceaccount/minio-operator created
 clusterrole.rbac.authorization.k8s.io/minio-operator-role created
 clusterrolebinding.rbac.authorization.k8s.io/minio-operator-binding created
 deployment.apps/minio-operator created
-service/minio-operator created
+service/operator created
+service/sts created
 ```
 
 ### 📚 설치 방법 설명
@@ -228,73 +169,59 @@ service/minio-operator created
 - **자동 네임스페이스**: minio-operator 네임스페이스 자동 생성
 - **완전한 설치**: 모든 필수 리소스 포함
 
-**대안 설치 방법**:
-```bash
-# 최신 개발 버전 (권장하지 않음)
-kubectl kustomize github.com/minio/operator | kubectl apply -f -
-
-# 특정 버전 지정
-kubectl kustomize github.com/minio/operator\?ref=v5.0.15 | kubectl apply -f -
-```
-
 ### ⚠️ 중요 참고사항
 - **이전 URL 사용 금지**: `https://raw.githubusercontent.com/minio/operator/master/resources/operator.yaml`은 더 이상 사용할 수 없습니다
 - **kustomize 필수**: Kubernetes 1.14+ 버전에서 기본 제공되는 kustomize를 사용합니다
 - **버전 지정**: 프로덕션 환경에서는 항상 특정 버전을 지정하는 것을 권장합니다
-
-### 📚 설치된 리소스 설명
-
-**1. CustomResourceDefinition (CRD)**
-```bash
-kubectl get crd | grep minio
-```
-예상 출력:
-```
-tenants.minio.min.io                          2023-08-10T10:30:00Z
-```
-
-**2. ServiceAccount & RBAC**
-```bash
-kubectl get serviceaccount -n minio-operator
-kubectl get clusterrole | grep minio
-kubectl get clusterrolebinding | grep minio
-```
-
-**3. Deployment**
-```bash
-kubectl get deployment -n minio-operator
-```
-예상 출력:
-```
-NAME             READY   UP-TO-DATE   AVAILABLE   AGE
-minio-operator   1/1     1            1           30s
-```
-
-**4. Service**
-```bash
-kubectl get service -n minio-operator
-```
-예상 출력:
-```
-NAME             TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
-minio-operator   ClusterIP   10.96.123.45    <none>        9090/TCP   30s
-```
 
 ### 🛑 체크포인트
 모든 리소스가 성공적으로 생성되었는지 확인하세요.
 
 ---
 
-이것은 Lab 01 가이드의 첫 번째 부분입니다. 계속해서 나머지 단계들을 추가하겠습니다.
-## Step 5: Operator Pod 상태 확인
+## Step 5: Operator 배포 상태 확인
 
 ### 💡 개념 설명
 Operator는 Kubernetes Deployment로 실행되며, 지속적으로 클러스터 상태를 모니터링합니다.
 
-**Pod 상태 확인 중요성**:
-- **Running**: Operator가 정상 작동 중
-- **Pending**: 스케줄링 대기 (리소스 부족 또는 제약 조건)
-- **CrashLoopBackOff**: 반복적인 실패 (설정 오류 또는 권한 문제)
+### 🔍 실행할 명령어
+```bash
+kubectl get deployment -n minio-operator
+```
+
+### ✅ 예상 출력
+```
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+minio-operator   1/1     1            1           2m
+```
+
+### 📚 출력 정보 해석
+- **READY**: 1/1 (준비된 Pod 수 / 원하는 Pod 수)
+- **UP-TO-DATE**: 최신 버전으로 업데이트된 Pod 수
+- **AVAILABLE**: 사용 가능한 Pod 수
+- **AGE**: Deployment 생성 시간
+
+### 🚨 단일 노드 환경 문제 해결
+
+**증상**: `1/2 Ready` 상태로 표시되는 경우
+
+**원인**: Pod Anti-Affinity 규칙으로 인해 같은 노드에 두 개의 Pod를 배치할 수 없음
+
+**해결 방법**:
+```bash
+# 단일 노드 환경에서는 replica를 1로 조정
+kubectl scale deployment minio-operator -n minio-operator --replicas=1
+```
+
+### 🛑 체크포인트
+Deployment가 `1/1 Ready` 상태인지 확인하세요.
+
+---
+
+## Step 6: Operator Pod 상태 확인
+
+### 💡 개념 설명
+Pod 상태를 통해 Operator의 실제 실행 상태를 확인합니다.
 
 ### 🔍 실행할 명령어
 ```bash
@@ -304,7 +231,7 @@ kubectl get pods -n minio-operator
 ### ✅ 예상 출력
 ```
 NAME                              READY   STATUS    RESTARTS   AGE
-minio-operator-7d4c8b5f9b-xyz12   1/1     Running   0          2m
+minio-operator-784dc55945-l2nqm   1/1     Running   0          3m
 ```
 
 ### 📚 출력 정보 해석
@@ -313,160 +240,62 @@ minio-operator-7d4c8b5f9b-xyz12   1/1     Running   0          2m
 - **RESTARTS**: 0 (재시작 횟수, 낮을수록 좋음)
 - **AGE**: Pod 실행 시간
 
-### 🔍 Pod 상세 정보 확인
+### 🔍 Pod 상세 정보 확인 (문제 발생 시)
 ```bash
 kubectl describe pod -n minio-operator -l name=minio-operator
-```
-
-### 📊 주요 확인 사항
-- **Events**: Pod 생성 과정의 이벤트 로그
-- **Conditions**: Pod 상태 조건
-- **Containers**: 컨테이너 상태 및 설정
-
-### 🚨 문제 해결
-
-#### 문제 1: Pod가 Pending 상태
-**원인**: 스케줄링 불가 (리소스 부족, taint, 노드 선택기)
-
-**해결 방법**:
-```bash
-# Pod 상세 정보 확인
-kubectl describe pod -n minio-operator -l name=minio-operator
-
-# 노드 리소스 확인
-kubectl top nodes  # metrics-server 필요
-
-# 단일 노드 환경에서 taint 확인
-kubectl describe node | grep -i taint
-```
-
-#### 문제 2: 단일 노드에서 1/2 Ready 상태 (Anti-Affinity 문제)
-**증상**: Deployment가 1/2 상태로 표시되고, 하나의 Pod가 Pending 상태
-
-**원인**: MinIO Operator의 Pod Anti-Affinity 규칙으로 인해 같은 노드에 두 개의 Pod를 배치할 수 없음
-
-**해결 방법**:
-```bash
-# 현재 상태 확인
-kubectl get deployment -n minio-operator
-kubectl get pods -n minio-operator
-
-# 단일 노드 환경에서는 replica를 1로 조정
-kubectl scale deployment minio-operator -n minio-operator --replicas=1
-
-# 결과 확인
-kubectl get deployment -n minio-operator
-```
-
-**예상 결과**:
-```
-NAME             READY   UP-TO-DATE   AVAILABLE   AGE
-minio-operator   1/1     1            1           5m
-```
-
-#### 문제 3: Pod가 CrashLoopBackOff 상태
-**원인**: 애플리케이션 오류, 권한 문제, 설정 오류
-
-**해결 방법**:
-```bash
-# Pod 로그 확인
-kubectl logs -n minio-operator -l name=minio-operator
-
-# 이전 컨테이너 로그 확인 (재시작된 경우)
-kubectl logs -n minio-operator -l name=minio-operator --previous
 ```
 
 ### 🛑 체크포인트
-Operator Pod가 "Running" 상태이고 READY가 "1/1"인지 확인하세요.
+Pod가 `Running` 상태이고 재시작 횟수가 0인지 확인하세요.
 
 ---
 
-## Step 6: Operator 로그 확인
+## Step 7: Operator 서비스 확인
 
 ### 💡 개념 설명
-Operator 로그를 통해 설치 상태와 동작을 확인할 수 있습니다:
-
-**로그 확인 목적**:
-- **설치 검증**: Operator가 정상적으로 시작되었는지 확인
-- **CRD 등록**: 사용자 정의 리소스가 등록되었는지 확인
-- **권한 검증**: 필요한 권한이 올바르게 설정되었는지 확인
-- **문제 진단**: 오류 발생 시 원인 파악
+MinIO Operator는 두 개의 서비스를 제공합니다.
 
 ### 🔍 실행할 명령어
 ```bash
-kubectl logs -n minio-operator -l name=minio-operator --tail=20
+kubectl get svc -n minio-operator
 ```
 
-### ✅ 예상 출력 (정상 상태)
+### ✅ 예상 출력
 ```
-2023-08-10T10:30:15.123Z INFO    controller-runtime.metrics      Starting metrics server
-2023-08-10T10:30:15.124Z INFO    controller-runtime.builder       Registering a mutating webhook
-2023-08-10T10:30:15.125Z INFO    controller-runtime.webhook       Starting webhook server
-2023-08-10T10:30:15.126Z INFO    controller-runtime.certwatcher   Updated current TLS certificate
-2023-08-10T10:30:15.127Z INFO    controller-runtime.webhook       Serving webhook server
-2023-08-10T10:30:15.128Z INFO    controller-runtime.manager       Starting manager
-2023-08-10T10:30:15.129Z INFO    Starting EventSource             controller=tenant
-2023-08-10T10:30:15.130Z INFO    Starting Controller              controller=tenant
-2023-08-10T10:30:15.131Z INFO    Starting workers                 controller=tenant worker count=1
+NAME       TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+operator   ClusterIP   10.109.26.96   <none>        4221/TCP   5m
+sts        ClusterIP   10.110.16.37   <none>        4223/TCP   5m
 ```
 
-### 📚 로그 메시지 해석
-- **metrics server**: 모니터링 메트릭 서버 시작
-- **webhook**: 검증 및 변형 웹훅 서버 시작
-- **manager**: 컨트롤러 매니저 시작
-- **EventSource**: 이벤트 소스 시작 (Tenant 리소스 감시)
-- **Controller**: Tenant 컨트롤러 시작
-- **workers**: 워커 프로세스 시작
+### 📚 서비스 설명
+- **operator (4221/TCP)**: Operator API 서버 (내부 관리용)
+- **sts (4223/TCP)**: Security Token Service (인증 관리)
 
-### 🔍 실시간 로그 모니터링
+### 🔍 서비스 연결 상태 확인
 ```bash
-kubectl logs -n minio-operator -l name=minio-operator -f
+kubectl get endpoints -n minio-operator
 ```
 
-**참고**: `-f` 옵션으로 실시간 로그 스트리밍 (Ctrl+C로 종료)
-
-### 🚨 문제 해결
-
-#### 문제: 권한 관련 오류
-**로그 예시**:
+### ✅ 예상 출력
 ```
-ERROR   controller-runtime.manager  unable to create controller: failed to create client: Unauthorized
+NAME       ENDPOINTS          AGE
+operator   10.244.0.61:4221   5m
+sts        10.244.0.61:4223   5m
 ```
 
-**해결 방법**:
-```bash
-# RBAC 설정 확인
-kubectl get clusterrolebinding | grep minio-operator
-kubectl describe clusterrolebinding minio-operator-binding
-```
-
-#### 문제: CRD 등록 실패
-**로그 예시**:
-```
-ERROR   controller-runtime.builder  unable to register CRD: customresourcedefinitions.apiextensions.k8s.io is forbidden
-```
-
-**해결 방법**:
-```bash
-# CRD 상태 확인
-kubectl get crd | grep minio
-kubectl describe crd tenants.minio.min.io
-```
+### 📚 결과 해석
+- **ENDPOINTS 존재**: Operator Pod가 정상적으로 서비스에 연결됨
+- **IP:PORT 표시**: 내부 네트워크에서 API 서버 접근 가능
 
 ### 🛑 체크포인트
-로그에서 오류 메시지 없이 "Starting workers" 메시지가 표시되는지 확인하세요.
+두 서비스 모두 엔드포인트가 정상적으로 설정되었는지 확인하세요.
 
 ---
 
-## Step 7: CRD (Custom Resource Definition) 확인
+## Step 8: CRD (Custom Resource Definition) 확인
 
 ### 💡 개념 설명
-CRD는 Kubernetes API를 확장하여 사용자 정의 리소스를 생성할 수 있게 해줍니다:
-
-**MinIO Operator CRDs**:
-- **Tenant**: MinIO 클러스터 인스턴스 정의
-- **Policy**: IAM 정책 정의 (선택적)
-- **User**: IAM 사용자 정의 (선택적)
+MinIO Operator는 Tenant라는 사용자 정의 리소스를 제공합니다.
 
 ### 🔍 실행할 명령어
 ```bash
@@ -475,36 +304,10 @@ kubectl get crd | grep minio
 
 ### ✅ 예상 출력
 ```
-tenants.minio.min.io                          2023-08-10T10:30:00Z
+tenants.minio.min.io        2025-08-11T03:49:03Z
 ```
 
-### 📋 CRD 상세 정보 확인
-```bash
-kubectl describe crd tenants.minio.min.io
-```
-
-### 📚 CRD 구조 이해
-
-**Tenant CRD 주요 필드**:
-```yaml
-apiVersion: minio.min.io/v2
-kind: Tenant
-metadata:
-  name: my-tenant
-spec:
-  image: minio/minio:RELEASE.2023-08-04T17-40-21Z
-  pools:
-  - servers: 4
-    volumesPerServer: 4
-    volumeClaimTemplate:
-      spec:
-        accessModes: [ "ReadWriteOnce" ]
-        resources:
-          requests:
-            storage: 10Gi
-```
-
-### 🔍 CRD API 버전 확인
+### 📚 CRD 상세 정보 확인
 ```bash
 kubectl api-resources | grep minio
 ```
@@ -526,52 +329,42 @@ Tenant CRD가 정상적으로 등록되었는지 확인하세요.
 
 ---
 
-## Step 8: MinIO Operator 관리 방법 이해
+## Step 9: Operator 로그 확인
 
 ### 💡 개념 설명
-MinIO Operator v7.1.1에서는 웹 콘솔이 기본적으로 제공되지 않습니다. 대신 다음과 같은 방법으로 관리할 수 있습니다:
+Operator 로그를 통해 정상 작동 여부를 최종 확인합니다.
 
-**관리 방법들**:
-- **kubectl**: Kubernetes 네이티브 방식으로 Tenant 리소스 관리
-- **MinIO Tenant 콘솔**: 각 Tenant마다 제공되는 웹 관리 인터페이스
-- **MinIO Client (mc)**: 명령줄 도구를 통한 관리
-- **API**: REST API를 통한 프로그래매틱 관리
-
-### 🔍 현재 Operator 서비스 확인
+### 🔍 실행할 명령어
 ```bash
-kubectl get svc -n minio-operator
+kubectl logs -n minio-operator -l name=minio-operator --tail=10
 ```
 
-### ✅ 예상 출력
+### ✅ 예상 출력 (예시)
 ```
-NAME       TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
-operator   ClusterIP   10.109.26.96   <none>        4221/TCP   20m
-sts        ClusterIP   10.110.16.37   <none>        4223/TCP   20m
-```
-
-### 📚 서비스 설명
-- **operator (4221/TCP)**: Operator API 서버 (내부 관리용)
-- **sts (4223/TCP)**: Security Token Service (인증 관리)
-
-### 🔍 Operator 서비스 연결 확인
-```bash
-# 서비스 엔드포인트 확인
-kubectl get endpoints -n minio-operator
+I0811 03:49:21.351690       1 main-controller.go:577] minio-operator-xxx: I am the leader
+I0811 03:49:21.351825       1 main-controller.go:432] Starting Tenant controller
+I0811 03:49:21.351834       1 main-controller.go:435] Waiting for informer caches to sync
+I0811 03:49:22.252375       1 main-controller.go:456] STS Autocert is enabled
+I0811 03:49:27.578188       1 tls.go:130] Waiting for the sts certificates to be issued
 ```
 
-### ✅ 예상 결과
-```
-NAME       ENDPOINTS          AGE
-operator   10.244.0.60:4221   30m
-sts        10.244.0.60:4223   30m
-```
+### 📚 로그 해석
+- **Leader election**: Operator가 리더로 선출됨
+- **Tenant controller**: Tenant 관리 컨트롤러 시작
+- **STS Autocert**: 자동 인증서 설정 활성화
+- **오류 없음**: ERROR나 FATAL 메시지가 없어야 함
 
-### 📚 결과 해석
-- **ENDPOINTS 존재**: Operator Pod가 정상적으로 서비스에 연결됨
-- **IP:PORT 표시**: 내부 네트워크에서 API 서버 접근 가능
-- **두 개 서비스**: operator (관리용), sts (인증용)
+### 🛑 체크포인트
+로그에 오류 메시지가 없고 정상적인 시작 메시지가 보이는지 확인하세요.
 
-### 📋 Operator 상태 종합 확인
+---
+
+## Step 10: 설치 완료 종합 확인
+
+### 💡 개념 설명
+모든 구성 요소가 정상적으로 설치되고 작동하는지 종합적으로 확인합니다.
+
+### 🔍 실행할 명령어
 ```bash
 echo "=== MinIO Operator 설치 완료 확인 ==="
 echo ""
@@ -586,237 +379,69 @@ kubectl get svc -n minio-operator
 echo ""
 echo "4. CRD 등록 상태:"
 kubectl get crd | grep minio
+echo ""
+echo "5. 네임스페이스 상태:"
+kubectl get ns minio-operator
 ```
 
 ### ✅ 설치 완료 기준
 다음 조건들이 모두 만족되면 LAB-01이 성공적으로 완료된 것입니다:
 
+- ✅ **Namespace**: `minio-operator Active`
 - ✅ **Deployment**: `minio-operator 1/1 Ready`
 - ✅ **Pod**: `Running` 상태, 재시작 횟수 0
 - ✅ **Services**: `operator`, `sts` 서비스 생성됨
 - ✅ **CRD**: `tenants.minio.min.io` 등록됨
 
+---
+
+## 🎉 LAB-01 완료!
+
+### 🎯 학습 성과
+
+**이론적 이해:**
+- ✅ Kubernetes Operator 패턴 이해
+- ✅ CRD와 Controller의 역할 파악
+- ✅ MinIO Operator 아키텍처 이해
+
+**실무 기술:**
+- ✅ kustomize를 통한 Operator 설치
+- ✅ kubectl을 통한 리소스 상태 확인
+- ✅ 단일 노드 환경 최적화 경험
+- ✅ 트러블슈팅 기술 습득
+
 ### 🚀 다음 단계
+
 MinIO Operator 설치가 완료되었습니다! 이제 다음 단계로 진행할 수 있습니다:
 
-1. **LAB-02**: MinIO Tenant 배포 (실제 스토리지 클러스터)
-2. **LAB-03**: MinIO Client 설정 및 기본 사용법
-3. **LAB-04**: S3 API 고급 기능 활용
-
-### 💡 참고사항
-- **웹 콘솔**: MinIO Tenant 배포 후 각 Tenant의 콘솔을 사용
-- **관리 도구**: kubectl과 MinIO Client (mc)가 주요 관리 도구
-- **API 접근**: 필요시 Operator API를 직접 호출 가능
-- **Tenant 관리**: 생성, 수정, 삭제
-- **모니터링**: 상태, 메트릭, 로그 확인
-- **사용자 관리**: IAM 사용자 및 정책 관리
-- **설정 관리**: 구성 변경 및 업데이트
-
-### 🔍 Operator 서비스 확인
-```bash
-kubectl get service -n minio-operator
-```
-
-### ✅ 예상 출력
-```
-NAME             TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
-minio-operator   ClusterIP   10.96.123.45    <none>        9090/TCP   5m
-```
-
-### 📋 포트 포워딩 설정
-```bash
-kubectl port-forward -n minio-operator svc/minio-operator 9090:9090 &
-```
-
-### ✅ 포트 포워딩 확인
-```
-Forwarding from 127.0.0.1:9090 -> 9090
-Forwarding from [::1]:9090 -> 9090
-```
-
-### 🌐 웹 콘솔 접근
-브라우저에서 다음 주소로 접근:
-```
-http://localhost:9090
-```
-
-### 📚 웹 콘솔 초기 화면
-- **로그인 페이지**: JWT 토큰 또는 서비스 계정 토큰 필요
-- **대시보드**: Tenant 목록 및 상태
-- **생성 마법사**: 새 Tenant 생성 인터페이스
-
-### 🔑 서비스 계정 토큰 생성 (웹 콘솔 로그인용)
-```bash
-# 서비스 계정 토큰 시크릿 생성
-cat << EOF | kubectl apply -f -
-apiVersion: v1
-kind: Secret
-metadata:
-  name: minio-operator-token
-  namespace: minio-operator
-  annotations:
-    kubernetes.io/service-account.name: minio-operator
-type: kubernetes.io/service-account-token
-EOF
-```
-
-### 🔍 토큰 추출
-```bash
-kubectl get secret minio-operator-token -n minio-operator -o jsonpath='{.data.token}' | base64 -d
-```
-
-### 📋 토큰 사용법
-1. 웹 콘솔 접근 (http://localhost:9090)
-2. "Login with Service Account" 선택
-3. 추출한 토큰 입력
-4. "Login" 클릭
-
-### 🛑 체크포인트
-웹 콘솔에 성공적으로 접근하고 로그인할 수 있는지 확인하세요.
-
----
-
-## Step 10: 단일 노드 환경 최적화 (해당하는 경우)
-
-### 💡 개념 설명
-단일 노드 환경에서는 추가 최적화가 필요할 수 있습니다:
-
-**최적화 항목**:
-- **Taint 제거**: control-plane 노드에서 Pod 스케줄링 허용
-- **리소스 제한**: 메모리 및 CPU 사용량 조정
-- **스토리지 설정**: 로컬 스토리지 최적화
-
-### 🔍 현재 노드 수 확인
-```bash
-NODE_COUNT=$(kubectl get nodes --no-headers | wc -l)
-echo "노드 수: $NODE_COUNT"
-```
-
-### 🔧 단일 노드 환경 최적화 (NODE_COUNT=1인 경우만)
-
-#### Taint 확인
-```bash
-kubectl describe node | grep -i taint
-```
-
-#### Taint 제거 (필요한 경우)
-```bash
-kubectl taint nodes --all node-role.kubernetes.io/control-plane:NoSchedule-
-```
-
-#### 제거 확인
-```bash
-kubectl describe node | grep -i taint
-```
-
-**성공 시 출력**: `Taints: <none>`
-
-### ⚠️ 주의사항
-- **단일 노드 환경에서만** taint 제거
-- **다중 노드 환경에서는 제거하지 마세요**
-- 프로덕션 환경에서는 control-plane 보호가 중요
-
-### 🛑 체크포인트
-단일 노드 환경인 경우 taint가 적절히 처리되었는지 확인하세요.
-
----
-
-## 🎯 설치 검증 및 최종 확인
-
-### 🔍 종합 상태 확인
-```bash
-echo "=== MinIO Operator 설치 상태 확인 ==="
-echo ""
-
-echo "1. 네임스페이스:"
-kubectl get namespace minio-operator
-
-echo -e "\n2. CRD 등록:"
-kubectl get crd | grep minio
-
-echo -e "\n3. Operator Pod:"
-kubectl get pods -n minio-operator
-
-echo -e "\n4. Operator 서비스:"
-kubectl get service -n minio-operator
-
-echo -e "\n5. RBAC 설정:"
-kubectl get clusterrolebinding | grep minio-operator
-```
-
-### ✅ 성공 기준 체크리스트
-
-- [ ] **네임스페이스**: minio-operator가 Active 상태
-- [ ] **CRD**: tenants.minio.min.io가 등록됨
-- [ ] **Pod**: minio-operator Pod가 Running 상태
-- [ ] **서비스**: minio-operator 서비스가 생성됨
-- [ ] **RBAC**: 클러스터 역할 바인딩이 설정됨
-- [ ] **로그**: 오류 없이 정상 시작 메시지 확인
-- [ ] **웹 콘솔**: 포트 포워딩으로 접근 가능
-
-### 🚨 문제 해결 요약
-
-| 문제 | 증상 | 해결 방법 |
-|------|------|-----------|
-| Pod Pending | 스케줄링 불가 | taint 제거, 리소스 확인 |
-| CrashLoopBackOff | 반복 재시작 | 로그 확인, 권한 검증 |
-| CRD 등록 실패 | API 리소스 없음 | 클러스터 권한 확인 |
-| 웹 콘솔 접근 불가 | 연결 실패 | 포트 포워딩 재설정 |
-| 권한 오류 | Unauthorized | RBAC 설정 확인 |
-
----
-
-## 🧠 학습 성과 확인
-
-### 📋 이해도 점검 질문
-
-1. **Operator 패턴의 장점을 3가지 이상 설명할 수 있나요?**
-2. **CRD가 무엇이고 왜 필요한지 이해했나요?**
-3. **MinIO Operator가 관리하는 주요 리소스들을 나열할 수 있나요?**
-4. **단일 노드 환경에서 taint 제거가 필요한 이유를 알고 있나요?**
-5. **Operator 웹 콘솔의 주요 기능들을 설명할 수 있나요?**
-
-### 🎓 핵심 개념 정리
-
-**Operator 패턴**:
-- 복잡한 애플리케이션의 자동화된 관리
-- CRD + Controller + 도메인 지식의 결합
-- 선언적 설정을 통한 라이프사이클 관리
-
-**MinIO Operator**:
-- MinIO 클러스터의 Kubernetes 네이티브 관리
-- Tenant 리소스를 통한 선언적 배포
-- 자동화된 스케일링, 업그레이드, 복구
-
-**CRD (Custom Resource Definition)**:
-- Kubernetes API 확장 메커니즘
-- 애플리케이션별 리소스 정의
-- kubectl로 네이티브 리소스처럼 관리
-
----
-
-## 🚀 다음 단계
-
-MinIO Operator 설치가 완료되었습니다! 이제 실제 MinIO Tenant를 배포할 준비가 되었습니다.
-
-**Lab 2: MinIO Tenant 배포**에서 학습할 내용:
-- Tenant 리소스 정의 및 배포
+**LAB-02: MinIO Tenant 배포**
+- MinIO 스토리지 클러스터 생성
 - 실시간 동적 프로비저닝 관찰
-- StatefulSet과 PVC 관계 이해
-- Erasure Coding 설정 및 검증
+- MinIO 웹 콘솔 접근 (실제 웹 UI 사용 가능!)
 
-### 🔗 관련 문서
-- [Lab 2 Lab Guide: MinIO Tenant 배포](LAB-02-GUIDE.md)
-- [Operator 패턴 상세 개념](LAB-01-CONCEPTS.md)
-- [MinIO 공식 Operator 문서](https://docs.min.io/minio/k8s/)
+**LAB-03: MinIO Client 설정**
+- 명령줄 도구를 통한 관리
+- S3 호환 API 사용법
 
-### 🧹 정리 명령어 (필요한 경우)
-```bash
-# Operator 제거 (다음 Lab 진행 전에는 실행하지 마세요)
-kubectl delete -f https://raw.githubusercontent.com/minio/operator/master/resources/operator.yaml
-kubectl delete namespace minio-operator
-```
+### 💡 관리 방법 안내
+
+**현재 사용 가능한 관리 방법:**
+- **kubectl**: Tenant 리소스 관리
+- **로그 확인**: Operator 상태 모니터링
+
+**LAB-02 완료 후 추가 가능:**
+- **MinIO Tenant 웹 콘솔**: 완전한 웹 기반 관리 인터페이스
+- **MinIO Client (mc)**: 명령줄 관리 도구
 
 ---
 
-축하합니다! MinIO Operator가 성공적으로 설치되었습니다. 이제 Kubernetes 클러스터에서 MinIO를 네이티브 방식으로 관리할 수 있는 기반이 마련되었습니다.
+**다음 Lab 시작:**
+```bash
+cat docs/LAB-02-GUIDE.md
+```
+
+## 📚 참고 자료
+
+- [MinIO Operator 공식 문서](https://min.io/docs/minio/kubernetes/upstream/)
+- [Kubernetes Operator 패턴](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
+- [Custom Resource Definitions](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)
