@@ -4,6 +4,34 @@
 
 Lab 7에서는 MinIO 클러스터의 모니터링 시스템을 구축하면서 Prometheus 메트릭 수집, Grafana 시각화, 그리고 알림 시스템의 핵심 개념을 학습합니다.
 
+## 🏷️ 공식 GitHub 기준 모니터링 정보
+
+### MinIO Operator v7.1.1 모니터링 기능
+- **내장 Prometheus 지원**: prometheusOperator 필드 지원
+- **공식 메트릭 엔드포인트**: /minio/v2/metrics/cluster
+- **공식 어노테이션**: 자동 서비스 디스커버리 지원
+- **Grafana 대시보드**: 공식 MinIO 대시보드 제공
+
+### 공식 모니터링 설정 (v7.1.1)
+```yaml
+# 공식 GitHub 예제의 모니터링 어노테이션
+apiVersion: minio.min.io/v2
+kind: Tenant
+metadata:
+  annotations:
+    prometheus.io/path: /minio/v2/metrics/cluster
+    prometheus.io/port: "9000"
+    prometheus.io/scrape: "true"
+spec:
+  # Prometheus Operator 통합 (v7.1.1 신규 기능)
+  prometheusOperator: true
+```
+
+### 지원하는 메트릭 버전
+- **MinIO 서버**: RELEASE.2025-04-08T15-41-24Z 메트릭
+- **Prometheus**: v2.40+ 권장
+- **Grafana**: v9.0+ 권장
+
 ## 🔍 핵심 개념 1: Prometheus 기반 모니터링
 
 ### Prometheus 아키텍처

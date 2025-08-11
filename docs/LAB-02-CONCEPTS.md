@@ -4,21 +4,43 @@
 
 Lab 2에서는 MinIO Tenant를 배포하면서 실시간 동적 프로비저닝 과정을 관찰하고, StatefulSet과 PVC의 관계, 그리고 WaitForFirstConsumer의 실제 동작을 학습합니다.
 
+## 🏷️ 공식 GitHub 기준 버전 정보
+
+### MinIO Operator v7.1.1 기준 Tenant
+- **CRD API 버전**: minio.min.io/v2
+- **기본 MinIO 서버 이미지**: minio/minio:RELEASE.2025-04-08T15-41-24Z
+- **사이드카 이미지**: quay.io/minio/operator-sidecar:v7.0.1
+- **공식 예제 기준**: GitHub examples/kustomization/base/tenant.yaml
+
+### v7.1.1에서 지원하는 주요 기능
+- **features 섹션**: bucketDNS, domains 등 고급 기능
+- **users 섹션**: 자동 사용자 생성
+- **podManagementPolicy**: Pod 관리 정책 설정
+- **공식 어노테이션**: Prometheus 모니터링 지원
+
 ## 🔍 핵심 개념 1: MinIO Tenant 아키텍처
 
 ### Tenant란?
 MinIO에서 **Tenant**는 독립적인 MinIO 클러스터 인스턴스를 의미합니다.
 
 ```yaml
-# Tenant 리소스 구조
+# 공식 v7.1.1 Tenant 리소스 구조
 apiVersion: minio.min.io/v2
 kind: Tenant
 metadata:
   name: minio-tenant
   namespace: minio-tenant
+  # 공식 예제 라벨
+  labels:
+    app: minio
+  # 공식 모니터링 어노테이션
+  annotations:
+    prometheus.io/path: /minio/v2/metrics/cluster
+    prometheus.io/port: "9000"
+    prometheus.io/scrape: "true"
 spec:
   # 클러스터 전체 설정
-  image: minio/minio:RELEASE.2024-01-16T16-07-38Z
+  image: minio/minio:RELEASE.2025-04-08T15-41-24Z
   configuration:
     name: minio-creds-secret
   
@@ -408,7 +430,7 @@ $ kubectl get events -n minio-tenant --sort-by=.metadata.creationTimestamp -w
 LAST SEEN   TYPE     REASON              OBJECT                        MESSAGE
 30s         Normal   Scheduled           pod/minio-tenant-pool-0-0     Successfully assigned minio-tenant/minio-tenant-pool-0-0 to worker-node-1
 25s         Normal   ProvisioningSucceeded  persistentvolumeclaim/data-0-minio-tenant-pool-0-0  Successfully provisioned volume pvc-12345678-1234-1234-1234-123456789012
-20s         Normal   Pulled              pod/minio-tenant-pool-0-0     Container image "minio/minio:RELEASE.2024-01-16T16-07-38Z" already present on machine
+20s         Normal   Pulled              pod/minio-tenant-pool-0-0     Container image "minio/minio:RELEASE.2025-04-08T15-41-24Z" already present on machine
 15s         Normal   Created             pod/minio-tenant-pool-0-0     Created container minio
 10s         Normal   Started             pod/minio-tenant-pool-0-0     Started container minio
 ```
