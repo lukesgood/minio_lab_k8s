@@ -144,10 +144,10 @@ mc admin info local
    Pool: 1
 
 Drives:
- 1: http://localhost:9000/export/data1 - OK 
- 2: http://localhost:9000/export/data2 - OK 
- 3: http://localhost:9000/export/data3 - OK 
- 4: http://localhost:9000/export/data4 - OK 
+ 1: http://localhost:9000/export0/data - OK 
+ 2: http://localhost:9000/export1/data - OK 
+ 3: http://localhost:9000/export2/data - OK 
+ 4: http://localhost:9000/export3/data - OK 
 ```
 
 ### 📚 출력 정보 해석
@@ -260,15 +260,15 @@ Thu Aug 10 10:46:00 UTC 2023
 
 ### 🔍 Pod 내부 데이터 구조 확인
 ```bash
-kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- find /export -name "*test-file*" -type f
+kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- find /export0 /export1 /export2 /export3 -name "*test-file*" -type f
 ```
 
 ### ✅ 예상 출력
 ```
-/export/data1/.minio.sys/buckets/test-bucket/test-file.txt/xl.meta
-/export/data2/.minio.sys/buckets/test-bucket/test-file.txt/xl.meta
-/export/data3/test-bucket/test-file.txt/part.1
-/export/data4/test-bucket/test-file.txt/part.1
+/export0/data/.minio.sys/buckets/test-bucket/test-file.txt/xl.meta
+/export1/data/.minio.sys/buckets/test-bucket/test-file.txt/xl.meta
+/export2/data/test-bucket/test-file.txt/part.1
+/export3/data/test-bucket/test-file.txt/part.1
 ```
 
 ### 📚 데이터 구조 해석
@@ -278,12 +278,12 @@ kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- find /export -name "*test-
 
 ### 🔍 메타데이터 확인
 ```bash
-kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- cat /export/data1/.minio.sys/buckets/test-bucket/test-file.txt/xl.meta
+kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- cat /export0/data/.minio.sys/buckets/test-bucket/test-file.txt/xl.meta
 ```
 
 ### 🔍 실제 데이터 확인
 ```bash
-kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- cat /export/data3/test-bucket/test-file.txt/part.1
+kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- cat /export2/data/test-bucket/test-file.txt/part.1
 ```
 
 ### 🛑 체크포인트

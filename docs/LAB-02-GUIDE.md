@@ -755,8 +755,11 @@ drwxr-xr-x 2 root root 4096 Aug 10 10:30 pvc-45678901-4567-4567-4567-45678901234
 
 ### 🔍 MinIO 데이터 구조 확인
 ```bash
-# Pod 내부에서 데이터 구조 확인
-kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- ls -la /export/
+# Pod 내부에서 데이터 구조 확인 (다중 볼륨 구조)
+kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- ls -la /export0/data/
+kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- ls -la /export1/data/
+kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- ls -la /export2/data/
+kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- ls -la /export3/data/
 ```
 
 ### ✅ 예상 출력
