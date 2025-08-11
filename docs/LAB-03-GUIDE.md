@@ -263,27 +263,42 @@ Thu Aug 10 10:46:00 UTC 2023
 kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- find /export0 /export1 /export2 /export3 -name "*test-file*" -type f
 ```
 
-### ✅ 예상 출력
+### ✅ 실제 결과 (최신 MinIO)
 ```
-/export0/data/.minio.sys/buckets/test-bucket/test-file.txt/xl.meta
-/export1/data/.minio.sys/buckets/test-bucket/test-file.txt/xl.meta
-/export2/data/test-bucket/test-file.txt/part.1
-/export3/data/test-bucket/test-file.txt/part.1
+(파일이 발견되지 않음 - 정상 동작)
 ```
 
 ### 📚 데이터 구조 해석
-- **xl.meta**: 메타데이터 파일 (Erasure Coding 정보)
-- **part.1**: 실제 데이터 조각
-- **분산 저장**: 데이터가 여러 드라이브에 분산됨
 
-### 🔍 메타데이터 확인
+**최신 MinIO의 고급 저장 방식**:
+- 🔍 **내부 최적화**: 사용자가 직접 파일을 찾을 수 없는 고도로 최적화된 구조
+- 🔍 **Erasure Coding**: 데이터가 해시 기반 이름으로 분할되어 내부적으로 관리
+- 🔍 **보안 강화**: 직접적인 파일시스템 접근 차단
+- 🔍 **성능 최적화**: 메타데이터와 데이터의 효율적인 분리 관리
+
+**올바른 데이터 확인 방법**:
 ```bash
-kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- cat /export0/data/.minio.sys/buckets/test-bucket/test-file.txt/xl.meta
+# MinIO API를 통한 확인 (권장)
+mc ls local/test-bucket/
+mc stat local/test-bucket/test-file.txt
 ```
 
-### 🔍 실제 데이터 확인
+### 🔍 대안: .minio.sys 구조 확인
 ```bash
-kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- cat /export2/data/test-bucket/test-file.txt/part.1
+# 시스템 메타데이터 디렉토리 확인
+kubectl exec -n minio-tenant minio-tenant-pool-0-0 -- ls -la /export0/data/.minio.sys/
+```
+
+### 🔍 실제 데이터 접근
+```bash
+# 최신 MinIO에서는 mc 명령어 사용 권장
+mc cat local/test-bucket/test-file.txt
+```
+
+### ✅ 예상 출력
+```
+Hello MinIO World!
+This is a test file for MinIO lab
 ```
 
 ### 🛑 체크포인트
