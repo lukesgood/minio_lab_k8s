@@ -145,34 +145,39 @@ MinIO Operator는 kustomize를 통해 설치할 수 있습니다. 이 방법은 
 
 ### 🔍 실행할 명령어
 ```bash
-# 최신 안정 버전 MinIO Operator 설치 (kustomize 방식)
+# MinIO Operator 설치 (kustomize 방식)
 kubectl kustomize github.com/minio/operator\?ref=v5.0.18 | kubectl apply -f -
 ```
 
 ### ✅ 예상 출력
 ```
 namespace/minio-operator created
+customresourcedefinition.apiextensions.k8s.io/policybindings.sts.min.io created
 customresourcedefinition.apiextensions.k8s.io/tenants.minio.min.io created
 serviceaccount/minio-operator created
 clusterrole.rbac.authorization.k8s.io/minio-operator-role created
 clusterrolebinding.rbac.authorization.k8s.io/minio-operator-binding created
-deployment.apps/minio-operator created
 service/operator created
 service/sts created
+deployment.apps/minio-operator created
 ```
 
 ### 📚 설치 방법 설명
 
 **kustomize 방식의 장점**:
-- **최신 버전**: 검증된 안정 버전 사용 (v5.0.18)
+- **안정 버전**: GitHub 릴리스 기반 버전 사용
 - **검증된 설정**: 공식 테스트를 거친 구성
 - **자동 네임스페이스**: minio-operator 네임스페이스 자동 생성
 - **완전한 설치**: 모든 필수 리소스 포함
 
+**실제 설치되는 이미지 버전**:
+- 릴리스 태그: v5.0.18
+- 실제 컨테이너 이미지: minio/operator:v7.1.1
+
 ### ⚠️ 중요 참고사항
 - **이전 URL 사용 금지**: `https://raw.githubusercontent.com/minio/operator/master/resources/operator.yaml`은 더 이상 사용할 수 없습니다
 - **kustomize 필수**: Kubernetes 1.14+ 버전에서 기본 제공되는 kustomize를 사용합니다
-- **버전 지정**: 프로덕션 환경에서는 항상 특정 버전을 지정하는 것을 권장합니다
+- **단일 노드 환경**: 설치 후 replica 조정이 필요할 수 있습니다
 
 ### 🛑 체크포인트
 모든 리소스가 성공적으로 생성되었는지 확인하세요.
@@ -190,13 +195,20 @@ kubectl get deployment -n minio-operator
 ```
 
 ### ✅ 예상 출력
+**다중 노드 환경:**
 ```
 NAME             READY   UP-TO-DATE   AVAILABLE   AGE
-minio-operator   1/1     1            1           2m
+minio-operator   2/2     2            2           2m
+```
+
+**단일 노드 환경 (초기):**
+```
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+minio-operator   1/2     2            1           2m
 ```
 
 ### 📚 출력 정보 해석
-- **READY**: 1/1 (준비된 Pod 수 / 원하는 Pod 수)
+- **READY**: 준비된 Pod 수 / 원하는 Pod 수
 - **UP-TO-DATE**: 최신 버전으로 업데이트된 Pod 수
 - **AVAILABLE**: 사용 가능한 Pod 수
 - **AGE**: Deployment 생성 시간
@@ -211,6 +223,12 @@ minio-operator   1/1     1            1           2m
 ```bash
 # 단일 노드 환경에서는 replica를 1로 조정
 kubectl scale deployment minio-operator -n minio-operator --replicas=1
+```
+
+**해결 후 예상 출력:**
+```
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+minio-operator   1/1     1            1           3m
 ```
 
 ### 🛑 체크포인트
@@ -304,7 +322,7 @@ kubectl get crd | grep minio
 
 ### ✅ 예상 출력
 ```
-tenants.minio.min.io        2025-08-11T03:49:03Z
+tenants.minio.min.io        2025-08-11T04:34:03Z
 ```
 
 ### 📚 CRD 상세 정보 확인
@@ -315,6 +333,18 @@ kubectl api-resources | grep minio
 ### ✅ 예상 출력
 ```
 tenants       tenant    minio.min.io/v2    true    Tenant
+```
+
+### 🔍 추가 CRD 확인
+MinIO Operator는 추가로 STS 관련 CRD도 생성합니다:
+```bash
+kubectl get crd | grep -E "(minio|sts)"
+```
+
+### ✅ 전체 CRD 출력
+```
+policybindings.sts.min.io   2025-08-11T04:34:03Z
+tenants.minio.min.io        2025-08-11T04:34:03Z
 ```
 
 ### 📚 출력 정보 해석
@@ -388,10 +418,21 @@ kubectl get ns minio-operator
 다음 조건들이 모두 만족되면 LAB-01이 성공적으로 완료된 것입니다:
 
 - ✅ **Namespace**: `minio-operator Active`
-- ✅ **Deployment**: `minio-operator 1/1 Ready`
+- ✅ **Deployment**: `minio-operator 1/1 Ready` (단일 노드) 또는 `2/2 Ready` (다중 노드)
 - ✅ **Pod**: `Running` 상태, 재시작 횟수 0
 - ✅ **Services**: `operator`, `sts` 서비스 생성됨
-- ✅ **CRD**: `tenants.minio.min.io` 등록됨
+- ✅ **CRDs**: `tenants.minio.min.io`, `policybindings.sts.min.io` 등록됨
+- ✅ **Container Image**: `minio/operator:v7.1.1` 실행 중
+
+### 🔍 실제 컨테이너 이미지 확인
+```bash
+kubectl get deployment minio-operator -n minio-operator -o jsonpath='{.spec.template.spec.containers[0].image}'
+```
+
+### ✅ 예상 출력
+```
+minio/operator:v7.1.1
+```
 
 ---
 
@@ -454,8 +495,9 @@ cat docs/LAB-02-GUIDE.md
 # 1. MinIO Operator 네임스페이스 삭제 (모든 리소스 포함)
 kubectl delete namespace minio-operator
 
-# 2. CRD 삭제
+# 2. CRDs 삭제
 kubectl delete crd tenants.minio.min.io
+kubectl delete crd policybindings.sts.min.io
 
 # 3. ClusterRole 삭제
 kubectl delete clusterrole minio-operator-role
@@ -468,7 +510,7 @@ kubectl delete clusterrolebinding minio-operator-binding
 ```bash
 echo "=== MinIO Operator 삭제 확인 ==="
 kubectl get ns | grep minio || echo "✅ 네임스페이스 삭제됨"
-kubectl get crd | grep minio || echo "✅ CRDs 삭제됨"
+kubectl get crd | grep -E "(minio|sts)" || echo "✅ CRDs 삭제됨"
 kubectl get clusterrole | grep minio || echo "✅ ClusterRole 삭제됨"
 kubectl get clusterrolebinding | grep minio || echo "✅ ClusterRoleBinding 삭제됨"
 ```
