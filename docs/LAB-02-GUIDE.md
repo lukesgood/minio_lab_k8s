@@ -342,54 +342,62 @@ watch -n 2 'kubectl get pods -n minio-tenant'
 
 ---
 
-## Step 6: MinIO Tenant YAML 정의
+## Step 6: MinIO Tenant YAML 정의 (환경별 스토리지 클래스 옵션)
 
 ### 💡 개념 설명
-MinIO Tenant는 CRD를 통해 선언적으로 정의됩니다. YAML 파일에 원하는 상태를 기술하면 Operator가 자동으로 구현합니다.
+MinIO Tenant는 CRD를 통해 선언적으로 정의됩니다. **MinIO는 워커 노드의 로컬 연결 스토리지 사용을 강력히 권장**하며, 환경에 따라 최적화된 스토리지 클래스를 선택해야 합니다.
 
-### 🔍 Tenant YAML 파일 생성 (공식 GitHub 예제 기준)
+**환경별 최적화 전략**:
+- **단일 노드**: 개발/테스트 환경, 리소스 효율성 중심
+- **다중 노드**: 프로덕션 환경, 고가용성 및 성능 중심, **로컬 연결 스토리지 권장**
+
+### 🏗️ 환경별 스토리지 클래스 옵션
+
+#### 📋 스토리지 클래스 선택 가이드
+
+| 환경 | 권장 스토리지 | 특징 | 사용 사례 | MinIO 권장도 |
+|------|---------------|------|-----------|-------------|
+| **단일 노드** | local-path | 간단, 빠른 설정 | 개발, 테스트, 학습 | ⭐⭐⭐ |
+| **다중 노드 (로컬)** | local-storage | **고성능, MinIO 권장** | 프로덕션, 고성능 요구 | ⭐⭐⭐⭐⭐ |
+| **다중 노드 (분산)** | longhorn, rook-ceph | 고가용성, 자동 복제 | 엔터프라이즈, 클라우드 | ⭐⭐⭐ |
+| **클라우드** | ebs, pd-ssd | 관리형, 확장성 | AWS EKS, GCP GKE | ⭐⭐⭐⭐ |
+
+### 🔧 Option 1: 단일 노드 환경 (기본 설정)
+
+**특징**: 개발/테스트 환경에 최적화된 설정
+
 ```bash
-cat << EOF > minio-tenant.yaml
+cat << EOF > minio-tenant-single-node.yaml
 apiVersion: minio.min.io/v2
 kind: Tenant
 metadata:
   name: minio-tenant
   namespace: minio-tenant
-  ## 공식 예제에서 권장하는 라벨
   labels:
     app: minio
-  ## 모니터링을 위한 어노테이션 (공식 예제)
+    environment: development
   annotations:
     prometheus.io/path: /minio/v2/metrics/cluster
     prometheus.io/port: "9000"
     prometheus.io/scrape: "true"
 spec:
-  ## 공식 GitHub 기본값 사용 (image 필드 생략 시 자동 적용)
-  # image: minio/minio:RELEASE.2025-04-08T15-41-24Z
-  
-  ## 공식 v7.1.1 스키마: configuration 필드 사용
   configuration:
     name: minio-creds-secret
   
-  ## 공식 예제의 features 섹션
   features:
-    ## S3 Bucket DNS 기능 (기본값: false)
     bucketDNS: false
-    ## 도메인 설정 (선택사항)
     domains: {}
   
-  ## 사용자 생성 (공식 예제 패턴)
   users:
     - name: storage-user
   
-  ## Pod 관리 정책 (공식 예제 기본값)
   podManagementPolicy: Parallel
   
-  ## 스토리지 풀 정의
+  ## 단일 노드 최적화 설정
   pools:
-  - servers: 1
+  - servers: 1                    # 단일 서버
     name: pool-0
-    volumesPerServer: 4
+    volumesPerServer: 4           # 4개 볼륨 (EC 비활성화)
     volumeClaimTemplate:
       metadata:
         name: data
@@ -398,17 +406,315 @@ spec:
         - ReadWriteOnce
         resources:
           requests:
-            storage: 1Gi
-        storageClassName: local-path
+            storage: 2Gi          # 개발용 작은 용량
+        storageClassName: local-path  # Local Path Provisioner
+    
+    ## 리소스 제한 (단일 노드 최적화)
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 500m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
   
-  ## 마운트 경로 설정
   mountPath: /export
   subPath: /data
-  
-  ## TLS 자동 인증서 (HTTP 모드로 설정)
   requestAutoCert: false
 EOF
 ```
+
+### 🏢 Option 2: 다중 노드 환경 - Local Storage (MinIO 권장) ⭐⭐⭐⭐⭐
+
+**특징**: **MinIO 공식 권장사항 준수**, 고성능, 로컬 연결 스토리지 사용
+
+#### 사전 준비: Local Storage 설정
+```bash
+# 1. MinIO 최적화 Local Storage Class 및 PV 생성
+kubectl apply -f - << EOF
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: minio-local-storage
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+    minio.min.io/optimized: "true"
+    minio.min.io/storage-type: "local-attached"
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+allowVolumeExpansion: false
+parameters:
+  fsType: "ext4"
+---
+# 워커 노드별 Local PV 생성 (예시: 2개 워커 노드, 각각 2개 볼륨)
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: minio-local-pv-worker-1
+spec:
+  capacity:
+    storage: 50Gi
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: minio-local-storage
+  local:
+    path: /mnt/minio-data/disk1
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - worker  # 실제 워커 노드명으로 변경
+EOF
+
+# 2. 워커 노드에 스토리지 디렉토리 생성
+# (각 워커 노드에서 실행)
+sudo mkdir -p /mnt/minio-data/disk1 /mnt/minio-data/disk2
+sudo chown -R 1000:1000 /mnt/minio-data/
+```
+
+#### MinIO Tenant 설정
+```bash
+cat << EOF > minio-tenant-multi-node-local.yaml
+apiVersion: minio.min.io/v2
+kind: Tenant
+metadata:
+  name: minio-tenant
+  namespace: minio-tenant
+  labels:
+    app: minio
+    environment: production
+    storage-type: local-attached
+  annotations:
+    prometheus.io/path: /minio/v2/metrics/cluster
+    prometheus.io/port: "9000"
+    prometheus.io/scrape: "true"
+    minio.min.io/storage-type: "locally-attached"
+    minio.min.io/deployment-type: "distributed"
+spec:
+  configuration:
+    name: minio-creds-secret
+  
+  features:
+    bucketDNS: false
+    domains: {}
+  
+  users:
+    - name: storage-user
+  
+  podManagementPolicy: Parallel
+  
+  ## MinIO 권장: 다중 노드 분산 배포
+  pools:
+  - name: pool-0
+    servers: 2                    # 워커 노드 수에 맞게 조정
+    volumesPerServer: 2           # 노드당 2개 로컬 볼륨
+    volumeClaimTemplate:
+      metadata:
+        name: data
+        labels:
+          minio.min.io/storage-type: "local-attached"
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 50Gi         # 로컬 PV 크기와 일치
+        storageClassName: minio-local-storage  # MinIO 최적화 스토리지 클래스
+    
+    ## 워커 노드에만 배포 (Control Plane 제외)
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: node-role.kubernetes.io/control-plane
+              operator: DoesNotExist
+      ## 노드별 분산 배치 (MinIO 권장)
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: v1.min.io/tenant
+              operator: In
+              values:
+              - minio-tenant
+          topologyKey: kubernetes.io/hostname
+    
+    ## 로컬 스토리지 최적화 리소스 설정
+    resources:
+      requests:
+        memory: 4Gi
+        cpu: 2000m
+      limits:
+        memory: 8Gi
+        cpu: 4000m
+    
+    ## 로컬 스토리지 최적화 환경 변수
+    env:
+    - name: MINIO_STORAGE_CLASS_STANDARD
+      value: "EC:2"               # 4개 드라이브로 EC:2 설정
+    - name: MINIO_API_REQUESTS_MAX
+      value: "1600"               # 로컬 스토리지 최적화
+  
+  mountPath: /export
+  subPath: /data
+  requestAutoCert: false
+EOF
+```
+
+### 🌐 Option 3: 다중 노드 환경 - 분산 스토리지
+
+**특징**: 고가용성, 자동 복제, 관리 편의성
+
+#### Longhorn 사용 예시
+```bash
+# 1. Longhorn 설치
+kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.5.3/deploy/longhorn.yaml
+
+# 2. 기본 스토리지 클래스로 설정
+kubectl patch storageclass longhorn -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+
+# 3. MinIO Tenant 설정
+cat << EOF > minio-tenant-multi-node-distributed.yaml
+apiVersion: minio.min.io/v2
+kind: Tenant
+metadata:
+  name: minio-tenant
+  namespace: minio-tenant
+  labels:
+    app: minio
+    environment: production
+spec:
+  configuration:
+    name: minio-creds-secret
+  
+  features:
+    bucketDNS: false
+    domains: {}
+  
+  users:
+    - name: storage-user
+  
+  podManagementPolicy: Parallel
+  
+  pools:
+  - servers: 4
+    name: pool-0
+    volumesPerServer: 2
+    volumeClaimTemplate:
+      metadata:
+        name: data
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 50Gi
+        storageClassName: longhorn    # 또는 rook-ceph-block
+    
+    ## 노드 분산 배치
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+              - key: v1.min.io/tenant
+                operator: In
+                values:
+                - minio-tenant
+            topologyKey: kubernetes.io/hostname
+    
+    resources:
+      requests:
+        memory: 2Gi
+        cpu: 1000m
+      limits:
+        memory: 4Gi
+        cpu: 2000m
+  
+  mountPath: /export
+  subPath: /data
+  requestAutoCert: false
+EOF
+```
+
+### 🔧 환경 자동 감지 및 선택
+
+```bash
+# 환경 자동 감지 스크립트
+NODE_COUNT=$(kubectl get nodes --no-headers | wc -l)
+WORKER_COUNT=$(kubectl get nodes --no-headers -l '!node-role.kubernetes.io/control-plane' | wc -l)
+
+echo "=== 환경 감지 결과 ==="
+echo "전체 노드 수: $NODE_COUNT"
+echo "워커 노드 수: $WORKER_COUNT"
+echo ""
+
+if [ $WORKER_COUNT -eq 0 ]; then
+    echo "🔧 단일 노드 환경 (Control Plane에서 워크로드 실행)"
+    echo "권장: minio-tenant-single-node.yaml"
+    cp minio-tenant-single-node.yaml minio-tenant.yaml
+elif [ $WORKER_COUNT -eq 1 ]; then
+    echo "🔧 단일 워커 노드 환경"
+    echo "권장: minio-tenant-single-node.yaml"
+    cp minio-tenant-single-node.yaml minio-tenant.yaml
+else
+    echo "🏢 다중 노드 환경 감지"
+    echo "MinIO 권장: 로컬 연결 스토리지 사용"
+    echo ""
+    echo "스토리지 클래스 옵션:"
+    echo "1) minio-local-storage (MinIO 권장, 최고 성능) ⭐⭐⭐⭐⭐"
+    echo "2) longhorn (고가용성, 사용 편의성) ⭐⭐⭐"
+    echo "3) rook-ceph (엔터프라이즈급) ⭐⭐⭐"
+    echo ""
+    echo "기본값: minio-tenant-multi-node-local.yaml (MinIO 권장)"
+    cp minio-tenant-multi-node-local.yaml minio-tenant.yaml
+fi
+
+echo "선택된 설정: minio-tenant.yaml"
+```
+
+### 📚 YAML 구성 요소 설명
+
+**메타데이터**:
+- `apiVersion`: minio.min.io/v2 (MinIO Operator API 버전)
+- `kind`: Tenant (리소스 유형)
+- `name`: minio-tenant (Tenant 이름)
+- `namespace`: minio-tenant (배포 네임스페이스)
+
+**스펙 (spec)**:
+- `configuration`: 인증 정보 시크릿 참조
+- `pools`: MinIO 서버 풀 정의
+- `mountPath`: 컨테이너 내 마운트 경로
+- `subPath`: 실제 데이터 저장 하위 경로
+- `requestAutoCert`: TLS 인증서 자동 생성 (false = HTTP)
+
+**풀 설정 (pools)**:
+- `servers`: 서버 수 (단일 노드: 1, 다중 노드: 워커 노드 수)
+- `name`: pool-0 (풀 이름)
+- `volumesPerServer`: 서버당 볼륨 수
+- `volumeClaimTemplate`: PVC 템플릿 정의
+
+**볼륨 클레임 템플릿**:
+- `accessModes`: ReadWriteOnce (단일 노드 읽기/쓰기)
+- `storage`: 볼륨당 크기
+- `storageClassName`: 환경에 맞는 스토리지 클래스
+
+### 🎯 MinIO 권장사항 준수 체크리스트
+
+- [ ] **로컬 연결 스토리지 사용** (다중 노드 환경)
+- [ ] **워커 노드 전용 배포** (Control Plane 제외)
+- [ ] **노드별 분산 배치** (Anti-Affinity 설정)
+- [ ] **직접 디스크 액세스** (네트워크 스토리지 회피)
+- [ ] **적절한 Erasure Coding** (EC:2 또는 EC:4)
+- [ ] **성능 최적화 리소스** (CPU/메모리 적절 할당)
 
 ### 📚 YAML 구성 요소 설명
 
@@ -450,19 +756,40 @@ YAML 파일이 올바르게 생성되었는지 확인하세요.
 ## Step 7: Tenant 배포 및 실시간 프로비저닝 관찰
 
 ### 💡 개념 설명
-이제 실제 Tenant를 배포하면서 동적 프로비저닝 과정을 실시간으로 관찰합니다.
+이제 실제 Tenant를 배포하면서 동적 프로비저닝 과정을 실시간으로 관찰합니다. **환경에 따라 선택한 YAML 파일을 사용**합니다.
 
 **예상 진행 순서**:
 1. **Tenant 생성**: CRD 리소스 생성
-2. **PVC 생성**: 4개의 PVC 생성 (Pending 상태)
+2. **PVC 생성**: 환경에 따른 PVC 생성 (Pending 상태)
 3. **StatefulSet 생성**: MinIO Pod 정의
 4. **Pod 스케줄링**: Pod가 노드에 배치 결정
-5. **PV 자동 생성**: 프로비저너가 PV 생성
+5. **PV 자동 생성**: 프로비저너가 PV 생성 (또는 기존 Local PV 바인딩)
 6. **바인딩**: PVC와 PV 연결
 7. **Pod 시작**: 볼륨 마운트 후 MinIO 시작
 
-### 🔍 Tenant 배포 실행
+### 🔍 환경별 Tenant 배포 실행
+
+#### 단일 노드 환경
 ```bash
+# 단일 노드용 YAML 사용
+kubectl apply -f minio-tenant-single-node.yaml
+```
+
+#### 다중 노드 환경 (MinIO 권장 로컬 스토리지)
+```bash
+# 다중 노드 로컬 스토리지용 YAML 사용
+kubectl apply -f minio-tenant-multi-node-local.yaml
+```
+
+#### 다중 노드 환경 (분산 스토리지)
+```bash
+# 분산 스토리지용 YAML 사용
+kubectl apply -f minio-tenant-multi-node-distributed.yaml
+```
+
+#### 자동 선택된 환경
+```bash
+# 환경 자동 감지로 생성된 YAML 사용
 kubectl apply -f minio-tenant.yaml
 ```
 

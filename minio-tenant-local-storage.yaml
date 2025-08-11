@@ -1,0 +1,97 @@
+apiVersion: minio.min.io/v2
+kind: Tenant
+metadata:
+  name: minio-tenant
+  namespace: minio-tenant
+  labels:
+    app: minio
+    environment: production
+    storage-type: local-attached
+  annotations:
+    prometheus.io/path: /minio/v2/metrics/cluster
+    prometheus.io/port: "9000"
+    prometheus.io/scrape: "true"
+    # MinIO 권장사항 어노테이션
+    minio.min.io/storage-type: "locally-attached"
+    minio.min.io/deployment-type: "distributed"
+spec:
+  configuration:
+    name: minio-creds-secret
+  
+  features:
+    bucketDNS: false
+    domains: {}
+  
+  users:
+    - name: storage-user
+  
+  podManagementPolicy: Parallel
+  
+  ## MinIO 권장: 다중 노드 분산 배포
+  pools:
+  - name: pool-0
+    servers: 2                    # 2개 워커 노드
+    volumesPerServer: 2           # 노드당 2개 로컬 볼륨
+    volumeClaimTemplate:
+      metadata:
+        name: data
+        labels:
+          minio.min.io/storage-type: "local-attached"
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 50Gi         # 로컬 PV 크기와 일치
+        storageClassName: minio-local-storage  # MinIO 최적화 스토리지 클래스
+    
+    ## 워커 노드에만 배포 (Control Plane 제외)
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: node-role.kubernetes.io/control-plane
+              operator: DoesNotExist
+      ## 노드별 분산 배치 (MinIO 권장)
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: v1.min.io/tenant
+              operator: In
+              values:
+              - minio-tenant
+          topologyKey: kubernetes.io/hostname
+    
+    ## 로컬 스토리지 최적화 리소스 설정
+    resources:
+      requests:
+        memory: 4Gi
+        cpu: 2000m
+      limits:
+        memory: 8Gi
+        cpu: 4000m
+    
+    ## 로컬 스토리지 최적화 환경 변수
+    env:
+    - name: MINIO_STORAGE_CLASS_STANDARD
+      value: "EC:2"               # 4개 드라이브로 EC:2 설정
+    - name: MINIO_API_REQUESTS_MAX
+      value: "1600"               # 로컬 스토리지 최적화
+    - name: MINIO_API_REQUESTS_DEADLINE
+      value: "10s"
+  
+  ## 마운트 경로 설정
+  mountPath: /export
+  subPath: /data
+  
+  ## HTTP 모드 (내부 네트워크)
+  requestAutoCert: false
+  
+  ## 로컬 스토리지 최적화 설정
+  serviceMetadata:
+    minioServiceLabels:
+      minio.min.io/storage-type: "local-attached"
+    consoleServiceLabels:
+      minio.min.io/storage-type: "local-attached"

@@ -1,0 +1,53 @@
+apiVersion: minio.min.io/v2
+kind: Tenant
+metadata:
+  name: minio-tenant
+  namespace: minio-tenant
+  labels:
+    app: minio
+    environment: development
+  annotations:
+    prometheus.io/path: /minio/v2/metrics/cluster
+    prometheus.io/port: "9000"
+    prometheus.io/scrape: "true"
+spec:
+  configuration:
+    name: minio-creds-secret
+  
+  features:
+    bucketDNS: false
+    domains: {}
+  
+  users:
+    - name: storage-user
+  
+  podManagementPolicy: Parallel
+  
+  ## 단일 노드 최적화 설정
+  pools:
+  - servers: 1                    # 단일 서버
+    name: pool-0
+    volumesPerServer: 4           # 4개 볼륨 (EC 비활성화)
+    volumeClaimTemplate:
+      metadata:
+        name: data
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 2Gi          # 개발용 작은 용량
+        storageClassName: local-path  # Local Path Provisioner
+    
+    ## 리소스 제한 (단일 노드 최적화)
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 500m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+  
+  mountPath: /export
+  subPath: /data
+  requestAutoCert: false

@@ -148,12 +148,13 @@ docs/LAB-12-GUIDE.md  # 운영 최적화
 - **핵심 개념**: Kubernetes 네이티브 애플리케이션 관리, 자동화된 운영
 - **소요시간**: 10-15분
 
-#### Lab 2: MinIO Tenant 배포
-- **학습 내용**: 실시간 동적 프로비저닝 관찰, StatefulSet과 PVC 관계
-- **실습 내용**: Tenant 개념 및 설정, 스토리지 클래스 구성, Erasure Coding 설정
-- **핵심 개념**: WaitForFirstConsumer 실제 동작, PV 자동 생성 과정, 실제 스토리지 경로 확인
-- **특별 기능**: 배포 전후 PV 상태 비교, 실시간 프로비저닝 모니터링
-- **소요시간**: 15-20분
+#### Lab 2: MinIO Tenant 배포 (환경별 스토리지 클래스 최적화)
+- **학습 내용**: 실시간 동적 프로비저닝 관찰, StatefulSet과 PVC 관계, **MinIO 권장 로컬 스토리지 구성**
+- **실습 내용**: Tenant 개념 및 설정, **환경별 스토리지 클래스 선택**, Erasure Coding 설정, **로컬 연결 스토리지 구성**
+- **핵심 개념**: WaitForFirstConsumer 실제 동작, PV 자동 생성 과정, 실제 스토리지 경로 확인, **MinIO 성능 최적화**
+- **특별 기능**: 배포 전후 PV 상태 비교, 실시간 프로비저닝 모니터링, **환경 자동 감지 및 최적화**
+- **환경별 옵션**: 단일 노드(local-path), 다중 노드(minio-local-storage), 분산 스토리지(longhorn/rook-ceph)
+- **소요시간**: 15-25분
 
 #### Lab 3: MinIO Client 및 기본 사용법
 - **학습 내용**: S3 호환 API 사용법, 실제 스토리지 경로 검증
