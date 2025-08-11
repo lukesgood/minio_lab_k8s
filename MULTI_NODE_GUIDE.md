@@ -48,7 +48,8 @@ Replica: 고가용성을 위한 다중 Operator
 
 ```bash
 # 통합 실습 메뉴 (다중 노드 환경 자동 감지)
-./run-lab.sh
+# Lab Guide를 순서대로 따라하며 실습 진행
+docs/LAB-00-GUIDE.md  # 환경 사전 검증부터 시작
 ```
 
 ## 📚 단계별 상세 가이드
