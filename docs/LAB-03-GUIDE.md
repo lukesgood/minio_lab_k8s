@@ -103,7 +103,7 @@ mc --version
 
 ### ✅ 예상 출력
 ```
-mc version RELEASE.2023-08-08T17-01-06Z (commit-id=1234567890abcdef)
+mc version RELEASE.2025-07-23T15-54-02Z (commit-id=abcdef1234567890)
 Runtime: go1.20.6 linux/amd64
 Copyright (c) 2015-2023 MinIO, Inc.
 License GNU AGPLv3 <https://www.gnu.org/licenses/agpl-3.0.html>

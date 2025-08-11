@@ -613,7 +613,7 @@ cat > environments/common.yaml << 'EOF'
 # 공통 설정
 image:
   repository: minio/minio
-  tag: "RELEASE.2024-01-01T00-00-00Z"
+  tag: "RELEASE.2025-04-08T15-41-24Z"
   pullPolicy: IfNotPresent
 
 service:

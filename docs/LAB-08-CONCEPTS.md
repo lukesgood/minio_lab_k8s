@@ -52,7 +52,7 @@ name: minio
 description: A Helm chart for MinIO
 type: application
 version: 0.1.0
-appVersion: "RELEASE.2024-01-16T16-07-38Z"
+appVersion: "RELEASE.2025-04-08T15-41-24Z"
 dependencies:
 - name: common
   version: "1.x.x"
@@ -93,7 +93,7 @@ replicaCount: 4
 
 image:
   repository: minio/minio
-  tag: "RELEASE.2024-01-16T16-07-38Z"
+  tag: "RELEASE.2025-04-08T15-41-24Z"
   pullPolicy: IfNotPresent
 
 service:
@@ -351,7 +351,7 @@ kubectl patch service minio --patch '...'
 ```yaml
 # 이미지 버전만 변경
 spec:
-  image: minio/minio:RELEASE.2024-03-01T00-00-00Z
+  image: minio/minio:RELEASE.2025-04-08T15-41-24Z
 ```
 
 **자동 롤링 업데이트:**

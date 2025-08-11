@@ -300,8 +300,8 @@ spec:
 
 ### 1. Operator 설치 과정 (v7.1.1)
 ```bash
-# 1. kustomize로 v5.0.18 태그 참조하지만 실제로는 v7.1.1 설치
-kubectl kustomize github.com/minio/operator\?ref=v5.0.18 | kubectl apply -f -
+# 1. 공식 GitHub v7.1.1 설치
+kubectl kustomize github.com/minio/operator\?ref=v7.1.1 | kubectl apply -f -
 
 # 2. 생성되는 리소스들
 namespace/minio-operator created

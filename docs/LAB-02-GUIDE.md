@@ -648,7 +648,7 @@ kubectl logs -n minio-tenant minio-tenant-pool-0-0
 MinIO Object Storage Server
 Copyright: 2015-2023 MinIO, Inc.
 License: GNU AGPLv3 <https://www.gnu.org/licenses/agpl-3.0.html>
-Version: RELEASE.2023-08-04T17-40-21Z (go1.20.6 linux/amd64)
+Version: RELEASE.2025-04-08T15-41-24Z (go1.21.8 linux/amd64)
 
 Status:         4 Online, 0 Offline. 
 API: http://10.244.0.5:9000  http://127.0.0.1:9000   
