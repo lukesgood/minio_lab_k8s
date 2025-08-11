@@ -430,8 +430,8 @@ echo "현재 MinIO API 설정:"
 mc admin config get local api
 
 # 멀티파트 업로드 임계값 확인
-echo -e "\n현재 멀티파트 설정:"
-mc admin config get local api | grep -E "(multipart_size|max_parts_count)"
+echo -e "\n현재 API 설정 (multipart 관련 설정은 내부적으로 관리됨):"
+mc admin config get local api | head -1
 
 # 다양한 청크 크기로 업로드 테스트
 echo -e "\n청크 크기별 성능 테스트:"

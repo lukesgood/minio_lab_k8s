@@ -95,19 +95,20 @@ time mc cp large-file.dat local/test-bucket/large-file.dat
 # Multipart Upload 설정 확인
 mc admin config get local api
 
-# 📋 예상 결과:
+# 📋 실제 결과 (최신 MinIO):
 # real    0m2.456s  (Single Part보다 오래 걸림)
 # user    0m0.234s
 # sys     0m0.089s
 # 
-# API 설정에서 multipart_size 확인:
-# api multipart_size=64MiB
-# api max_parts_count=10000
+# API 설정 출력 예시:
+# api requests_max=0 cluster_deadline=10s cors_allow_origin=* remote_transport_deadline=2h 
+# list_quorum=strict replication_priority=auto replication_max_workers=500 ...
 # 
 # 💡 설명:
-# - 200MB 파일은 자동으로 Multipart Upload 사용
-# - 64MB 청크로 분할되어 업로드
+# - 200MB 파일은 자동으로 Multipart Upload 사용 (MinIO 내부 로직)
+# - 기본적으로 64MB 청크로 분할되어 업로드 (하드코딩된 값)
 # - 네트워크 오류 시 실패한 부분만 재업로드 가능
+# - multipart_size는 최신 버전에서 설정 파일에 노출되지 않음
 ```
 
 **💡 관찰 포인트:**
