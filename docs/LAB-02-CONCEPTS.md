@@ -4,15 +4,15 @@
 
 Lab 2에서는 MinIO Tenant를 배포하면서 실시간 동적 프로비저닝 과정을 관찰하고, StatefulSet과 PVC의 관계, 그리고 WaitForFirstConsumer의 실제 동작을 학습합니다.
 
-## 🏷️ 공식 GitHub 기준 버전 정보
+## 🏷️ 버전 정보
 
-### MinIO Operator v7.1.1 기준 Tenant
+### MinIO Operator 기준 Tenant
 - **CRD API 버전**: minio.min.io/v2
-- **기본 MinIO 서버 이미지**: minio/minio:RELEASE.2025-04-08T15-41-24Z
-- **사이드카 이미지**: quay.io/minio/operator-sidecar:v7.0.1
+- **기본 MinIO 서버 이미지**: minio/minio (공식 기본값)
+- **사이드카 이미지**: quay.io/minio/operator-sidecar
 - **공식 예제 기준**: GitHub examples/kustomization/base/tenant.yaml
 
-### v7.1.1에서 지원하는 주요 기능
+### 지원하는 주요 기능
 - **features 섹션**: bucketDNS, domains 등 고급 기능
 - **users 섹션**: 자동 사용자 생성
 - **podManagementPolicy**: Pod 관리 정책 설정
@@ -654,3 +654,16 @@ kubectl get events -n minio-tenant --sort-by=.metadata.creationTimestamp
 ```
 
 이 개념들을 이해하면 MinIO Tenant 배포 과정에서 일어나는 모든 동적 프로비저닝과 스토리지 관련 동작을 완전히 이해할 수 있습니다.
+
+---
+
+## 📋 기준 버전 정보
+
+이 문서는 다음 버전을 기준으로 작성되었습니다:
+
+- **MinIO Operator**: v7.1.1 (2025-04-23 릴리스)
+- **MinIO Server**: RELEASE.2025-04-08T15-41-24Z
+- **Kubernetes**: 1.20+
+- **CRD API**: minio.min.io/v2
+
+**공식 저장소**: https://github.com/minio/operator

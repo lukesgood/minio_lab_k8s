@@ -13,15 +13,15 @@
 - Erasure Coding 설정 및 검증
 - 실제 스토리지 경로 확인
 
-## 🏷️ 공식 GitHub 기준 버전 정보
+## 🏷️ 버전 정보
 
-### MinIO Tenant에서 사용되는 이미지 (공식 기본값)
-- **MinIO 서버 이미지**: minio/minio:RELEASE.2025-04-08T15-41-24Z (공식 기본값)
-- **사이드카 이미지**: quay.io/minio/operator-sidecar:v7.0.1
+### MinIO Tenant에서 사용되는 이미지
+- **MinIO 서버 이미지**: minio/minio (공식 기본값)
+- **사이드카 이미지**: quay.io/minio/operator-sidecar
 - **CRD API 버전**: minio.min.io/v2
 
 ### 공식 GitHub 예제 기준
-- **예제 위치**: https://github.com/minio/operator/tree/v7.1.1/examples
+- **예제 위치**: https://github.com/minio/operator/tree/main/examples
 - **기본 Tenant**: examples/kustomization/base/tenant.yaml
 - **공식 스키마**: GitHub 공식 CRD 정의 기준
 
@@ -1025,3 +1025,17 @@ pkill -f "kubectl port-forward"
 ---
 
 축하합니다! MinIO Tenant가 성공적으로 배포되었고, 동적 프로비저닝의 전체 과정을 실제로 관찰했습니다. 이제 Kubernetes에서 MinIO를 네이티브 방식으로 운영할 수 있는 기반이 완전히 구축되었습니다.
+
+---
+
+## 📋 기준 버전 정보
+
+이 가이드는 다음 버전을 기준으로 작성되었습니다:
+
+- **MinIO Operator**: v7.1.1 (2025-04-23 릴리스)
+- **MinIO Server**: RELEASE.2025-04-08T15-41-24Z
+- **MinIO Client**: RELEASE.2025-07-23T15-54-02Z
+- **Kubernetes**: 1.20+
+- **CRD API**: minio.min.io/v2
+
+**공식 저장소**: https://github.com/minio/operator
