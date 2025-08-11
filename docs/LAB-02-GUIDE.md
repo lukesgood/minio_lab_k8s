@@ -13,15 +13,20 @@
 - Erasure Coding 설정 및 검증
 - 실제 스토리지 경로 확인
 
-## 🏷️ 버전 정보
+## 🏷️ 공식 GitHub 기준 버전 정보
 
-### MinIO Tenant에서 사용되는 이미지
-- **MinIO 서버 이미지**: minio/minio:RELEASE.2025-04-08T15-41-24Z (기본값)
+### MinIO Tenant에서 사용되는 이미지 (공식 기본값)
+- **MinIO 서버 이미지**: minio/minio:RELEASE.2025-04-08T15-41-24Z (공식 기본값)
 - **사이드카 이미지**: quay.io/minio/operator-sidecar:v7.0.1
 - **CRD API 버전**: minio.min.io/v2
 
+### 공식 GitHub 예제 기준
+- **예제 위치**: https://github.com/minio/operator/tree/v7.1.1/examples
+- **기본 Tenant**: examples/kustomization/base/tenant.yaml
+- **공식 스키마**: GitHub 공식 CRD 정의 기준
+
 ### 이미지 버전 선택 가이드
-- **기본 이미지 사용**: `image` 필드를 비우거나 생략
+- **기본 이미지 사용**: `image` 필드를 비우거나 생략 (권장)
 - **특정 버전 지정**: `image: minio/minio:RELEASE.YYYY-MM-DDTHH-MM-SSZ`
 - **최신 버전 사용**: `image: minio/minio:latest` (프로덕션 비권장)
 
@@ -342,7 +347,7 @@ watch -n 2 'kubectl get pods -n minio-tenant'
 ### 💡 개념 설명
 MinIO Tenant는 CRD를 통해 선언적으로 정의됩니다. YAML 파일에 원하는 상태를 기술하면 Operator가 자동으로 구현합니다.
 
-### 🔍 Tenant YAML 파일 생성
+### 🔍 Tenant YAML 파일 생성 (공식 GitHub 예제 기준)
 ```bash
 cat << EOF > minio-tenant.yaml
 apiVersion: minio.min.io/v2
@@ -350,10 +355,37 @@ kind: Tenant
 metadata:
   name: minio-tenant
   namespace: minio-tenant
+  ## 공식 예제에서 권장하는 라벨
+  labels:
+    app: minio
+  ## 모니터링을 위한 어노테이션 (공식 예제)
+  annotations:
+    prometheus.io/path: /minio/v2/metrics/cluster
+    prometheus.io/port: "9000"
+    prometheus.io/scrape: "true"
 spec:
-  image: minio/minio:RELEASE.2025-04-08T15-41-24Z
+  ## 공식 GitHub 기본값 사용 (image 필드 생략 시 자동 적용)
+  # image: minio/minio:RELEASE.2025-04-08T15-41-24Z
+  
+  ## 공식 v7.1.1 스키마: configuration 필드 사용
   configuration:
     name: minio-creds-secret
+  
+  ## 공식 예제의 features 섹션
+  features:
+    ## S3 Bucket DNS 기능 (기본값: false)
+    bucketDNS: false
+    ## 도메인 설정 (선택사항)
+    domains: {}
+  
+  ## 사용자 생성 (공식 예제 패턴)
+  users:
+    - name: storage-user
+  
+  ## Pod 관리 정책 (공식 예제 기본값)
+  podManagementPolicy: Parallel
+  
+  ## 스토리지 풀 정의
   pools:
   - servers: 1
     name: pool-0
@@ -368,8 +400,12 @@ spec:
           requests:
             storage: 1Gi
         storageClassName: local-path
+  
+  ## 마운트 경로 설정
   mountPath: /export
   subPath: /data
+  
+  ## TLS 자동 인증서 (HTTP 모드로 설정)
   requestAutoCert: false
 EOF
 ```

@@ -47,13 +47,13 @@ kubectl get nodes
 
 ## 🏷️ 사용되는 소프트웨어 버전
 
-### MinIO Operator
-- **GitHub 릴리스**: v5.0.18
+### MinIO Operator (공식 GitHub 기준)
+- **GitHub 공식 릴리스**: v7.1.1 (2025-04-23 릴리스)
 - **컨테이너 이미지**: minio/operator:v7.1.1
 - **CRD API 버전**: minio.min.io/v2
 - **사이드카 이미지**: quay.io/minio/operator-sidecar:v7.0.1
 
-### MinIO 서버
+### MinIO 서버 (공식 기본값)
 - **기본 이미지**: minio/minio:RELEASE.2025-04-08T15-41-24Z
 - **최신 버전**: RELEASE.2025-07-23T15-54-02Z
 - **버전 패턴**: RELEASE.YYYY-MM-DDTHH-MM-SSZ
@@ -63,10 +63,16 @@ kubectl get nodes
 - **스토리지**: Local Path Provisioner, NFS, Ceph 등
 - **아키텍처**: amd64, arm64 지원
 
+### 공식 GitHub 저장소
+- **저장소**: https://github.com/minio/operator
+- **공식 설치 방법**: `kubectl kustomize github.com/minio/operator\?ref=v7.1.1`
+- **공식 예제**: examples/kustomization/base/
+- **버전 일치성**: 릴리스 태그와 컨테이너 이미지 완전 일치
+
 ### 버전 선택 가이드
-- **학습 환경**: 기본 버전 사용 권장
+- **학습 환경**: 공식 v7.1.1 버전 사용 권장
 - **프로덕션**: 특정 버전 고정 권장
-- **최신 기능**: 최신 릴리스 사용 (안정성 검증 필요)
+- **최신 기능**: GitHub 최신 릴리스 사용
 
 ## 🚀 빠른 시작
 
