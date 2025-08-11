@@ -45,6 +45,29 @@ kubectl cluster-info
 kubectl get nodes
 ```
 
+## 🏷️ 사용되는 소프트웨어 버전
+
+### MinIO Operator
+- **GitHub 릴리스**: v5.0.18
+- **컨테이너 이미지**: minio/operator:v7.1.1
+- **CRD API 버전**: minio.min.io/v2
+- **사이드카 이미지**: quay.io/minio/operator-sidecar:v7.0.1
+
+### MinIO 서버
+- **기본 이미지**: minio/minio:RELEASE.2025-04-08T15-41-24Z
+- **최신 버전**: RELEASE.2025-07-23T15-54-02Z
+- **버전 패턴**: RELEASE.YYYY-MM-DDTHH-MM-SSZ
+
+### 호환성 정보
+- **Kubernetes**: 1.20+ (테스트 환경: v1.28.15)
+- **스토리지**: Local Path Provisioner, NFS, Ceph 등
+- **아키텍처**: amd64, arm64 지원
+
+### 버전 선택 가이드
+- **학습 환경**: 기본 버전 사용 권장
+- **프로덕션**: 특정 버전 고정 권장
+- **최신 기능**: 최신 릴리스 사용 (안정성 검증 필요)
+
 ## 🚀 빠른 시작
 
 ### 환경 설정 및 Lab Guide 실습 (권장)

@@ -4,6 +4,25 @@
 
 Lab 1에서는 MinIO Operator를 설치하고, Kubernetes Operator 패턴과 CRD(Custom Resource Definition) 기반 리소스 관리의 핵심 개념을 학습합니다.
 
+## 🏷️ 버전 정보
+
+### MinIO Operator 버전 체계
+- **GitHub 릴리스 태그**: v5.0.18 (kustomize에서 참조)
+- **실제 컨테이너 이미지**: minio/operator:v7.1.1
+- **CRD API 버전**: minio.min.io/v2
+- **사이드카 이미지**: quay.io/minio/operator-sidecar:v7.0.1
+
+### MinIO 서버 버전 정보
+- **기본 MinIO 이미지**: minio/minio:RELEASE.2025-04-08T15-41-24Z
+- **최신 MinIO 서버**: RELEASE.2025-07-23T15-54-02Z
+- **버전 패턴**: RELEASE.YYYY-MM-DDTHH-MM-SSZ
+
+### 버전 불일치 이유
+MinIO Operator는 GitHub 릴리스 태그와 실제 컨테이너 이미지 버전이 다를 수 있습니다:
+- **릴리스 태그**: 기능 릴리스 버전 (v5.0.18)
+- **컨테이너 이미지**: 실제 빌드 버전 (v7.1.1)
+- **이유**: 내부 버전 관리 정책과 빌드 프로세스의 차이
+
 ## 🔍 핵심 개념 1: Kubernetes Operator 패턴
 
 ### 전통적인 애플리케이션 배포 vs Operator 패턴
@@ -42,7 +61,7 @@ kind: Tenant
 metadata:
   name: minio-tenant
 spec:
-  image: minio/minio:latest
+  image: minio/minio:RELEASE.2025-04-08T15-41-24Z  # 기본 이미지
   pools:
   - servers: 4
     volumesPerServer: 2

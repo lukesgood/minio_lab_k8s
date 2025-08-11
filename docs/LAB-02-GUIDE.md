@@ -13,6 +13,18 @@
 - Erasure Coding 설정 및 검증
 - 실제 스토리지 경로 확인
 
+## 🏷️ 버전 정보
+
+### MinIO Tenant에서 사용되는 이미지
+- **MinIO 서버 이미지**: minio/minio:RELEASE.2025-04-08T15-41-24Z (기본값)
+- **사이드카 이미지**: quay.io/minio/operator-sidecar:v7.0.1
+- **CRD API 버전**: minio.min.io/v2
+
+### 이미지 버전 선택 가이드
+- **기본 이미지 사용**: `image` 필드를 비우거나 생략
+- **특정 버전 지정**: `image: minio/minio:RELEASE.YYYY-MM-DDTHH-MM-SSZ`
+- **최신 버전 사용**: `image: minio/minio:latest` (프로덕션 비권장)
+
 ## ⏱️ 예상 소요시간
 15-20분
 
@@ -339,7 +351,7 @@ metadata:
   name: minio-tenant
   namespace: minio-tenant
 spec:
-  image: minio/minio:RELEASE.2023-08-04T17-40-21Z
+  image: minio/minio:RELEASE.2025-04-08T15-41-24Z
   credsSecret:
     name: minio-creds-secret
   pools:
