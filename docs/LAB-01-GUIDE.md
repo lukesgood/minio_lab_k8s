@@ -553,17 +553,23 @@ sts        ClusterIP   10.110.16.37   <none>        4223/TCP   20m
 - **operator (4221/TCP)**: Operator API 서버 (내부 관리용)
 - **sts (4223/TCP)**: Security Token Service (인증 관리)
 
-### 🔍 Operator API 상태 확인
+### 🔍 Operator 서비스 연결 확인
 ```bash
-# 포트 포워딩으로 API 접근 테스트
-kubectl port-forward svc/operator -n minio-operator 4221:4221 &
-
-# API 응답 확인 (백그라운드에서 실행)
-curl -s http://localhost:4221/ || echo "API running but no web console"
-
-# 포트 포워딩 중지
-pkill -f "kubectl port-forward"
+# 서비스 엔드포인트 확인
+kubectl get endpoints -n minio-operator
 ```
+
+### ✅ 예상 결과
+```
+NAME       ENDPOINTS          AGE
+operator   10.244.0.60:4221   30m
+sts        10.244.0.60:4223   30m
+```
+
+### 📚 결과 해석
+- **ENDPOINTS 존재**: Operator Pod가 정상적으로 서비스에 연결됨
+- **IP:PORT 표시**: 내부 네트워크에서 API 서버 접근 가능
+- **두 개 서비스**: operator (관리용), sts (인증용)
 
 ### 📋 Operator 상태 종합 확인
 ```bash
