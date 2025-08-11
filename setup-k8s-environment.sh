@@ -398,7 +398,11 @@ check_existing_cluster() {
             echo "MinIO Lab을 시작하려면 다음 명령어를 실행하세요:"
             echo "./detect-environment.sh"
             echo "./setup-environment.sh"
-            echo "./run-lab.sh"
+            echo ""
+            echo "그 다음 Lab Guide를 순서대로 따라하세요:"
+            echo "docs/LAB-00-GUIDE.md  # 환경 사전 검증"
+            echo "docs/LAB-01-GUIDE.md  # MinIO Operator 설치"
+            echo "docs/LAB-02-GUIDE.md  # MinIO Tenant 배포"
         else
             echo -e "${RED}❌ 클러스터에 연결할 수 없습니다.${NC}"
             echo ""

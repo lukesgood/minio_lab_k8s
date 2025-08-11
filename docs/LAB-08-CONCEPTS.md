@@ -4,6 +4,28 @@
 
 Lab 8에서는 Helm을 사용한 전통적인 MinIO 배포 방식을 학습하면서 Operator 패턴과 Helm Chart 방식의 차이점, 장단점, 그리고 실제 프로덕션 환경에서의 선택 기준을 이해합니다.
 
+## 🏷️ 공식 GitHub 기준 비교 정보
+
+### MinIO Operator v7.1.1 vs Helm Chart
+| 구분 | Operator v7.1.1 | Helm Chart |
+|------|------------------|------------|
+| **설치 방법** | `kubectl kustomize github.com/minio/operator\?ref=v7.1.1` | `helm install minio bitnami/minio` |
+| **관리 방식** | CRD 기반 선언적 관리 | 템플릿 기반 배포 |
+| **자동화** | 완전 자동화 (라이프사이클 관리) | 수동 관리 필요 |
+| **업그레이드** | 자동 롤링 업데이트 | 수동 helm upgrade |
+| **모니터링** | 내장 Prometheus 지원 | 별도 설정 필요 |
+| **복잡도** | 높음 (학습 곡선) | 낮음 (친숙함) |
+
+### 공식 MinIO 권장사항
+- **프로덕션**: MinIO Operator v7.1.1 권장
+- **개발/테스트**: Helm Chart도 적합
+- **Kubernetes 네이티브**: Operator 패턴 권장
+
+### 버전 정보
+- **MinIO Operator**: v7.1.1 (공식 최신)
+- **MinIO 서버**: RELEASE.2025-04-08T15-41-24Z
+- **Helm Chart**: Bitnami 또는 공식 MinIO Chart
+
 ## 🔍 핵심 개념 1: Helm 패키지 매니저
 
 ### Helm의 역할과 구조
@@ -30,7 +52,7 @@ name: minio
 description: A Helm chart for MinIO
 type: application
 version: 0.1.0
-appVersion: "RELEASE.2024-01-16T16-07-38Z"
+appVersion: "RELEASE.2025-04-08T15-41-24Z"
 dependencies:
 - name: common
   version: "1.x.x"
@@ -71,7 +93,7 @@ replicaCount: 4
 
 image:
   repository: minio/minio
-  tag: "RELEASE.2024-01-16T16-07-38Z"
+  tag: "RELEASE.2025-04-08T15-41-24Z"
   pullPolicy: IfNotPresent
 
 service:
@@ -329,7 +351,7 @@ kubectl patch service minio --patch '...'
 ```yaml
 # 이미지 버전만 변경
 spec:
-  image: minio/minio:RELEASE.2024-03-01T00-00-00Z
+  image: minio/minio:RELEASE.2025-04-08T15-41-24Z
 ```
 
 **자동 롤링 업데이트:**

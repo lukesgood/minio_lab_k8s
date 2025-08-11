@@ -45,7 +45,8 @@
 ./setup-environment.sh
 
 # 3. 실습 시작
-./run-lab.sh
+# Lab Guide를 순서대로 따라하며 실습 진행
+docs/LAB-00-GUIDE.md  # 환경 사전 검증부터 시작
 ```
 
 **자동 감지 기준:**
@@ -74,7 +75,8 @@
 # 환경 감지 후 단일 노드로 설정
 ./detect-environment.sh
 ./setup-environment.sh
-./run-lab.sh
+# Lab Guide를 순서대로 따라하며 실습 진행
+docs/LAB-00-GUIDE.md  # 환경 사전 검증부터 시작
 ```
 
 **상세 가이드:** [SINGLE_NODE_GUIDE.md](SINGLE_NODE_GUIDE.md)
@@ -84,7 +86,8 @@
 # 환경 감지 후 다중 노드로 설정
 ./detect-environment.sh
 ./setup-environment.sh
-./run-lab.sh
+# Lab Guide를 순서대로 따라하며 실습 진행
+docs/LAB-00-GUIDE.md  # 환경 사전 검증부터 시작
 ```
 
 **상세 가이드:** [MULTI_NODE_GUIDE.md](MULTI_NODE_GUIDE.md)
@@ -100,7 +103,8 @@
 # 3. 새 환경에서 재시작
 ./detect-environment.sh
 ./setup-environment.sh
-./run-lab.sh
+# Lab Guide를 순서대로 따라하며 실습 진행
+docs/LAB-00-GUIDE.md  # 환경 사전 검증부터 시작
 ```
 
 ### 다중 노드에서 단일 노드로 전환
@@ -112,25 +116,9 @@
 # 3. 새 환경에서 재시작
 ./detect-environment.sh
 ./setup-environment.sh
-./run-lab.sh
+# Lab Guide를 순서대로 따라하며 실습 진행
+docs/LAB-00-GUIDE.md  # 환경 사전 검증부터 시작
 ```
-
-## 📚 사용 가능한 스크립트
-
-### 핵심 스크립트
-- `detect-environment.sh` - 환경 자동 감지
-- `setup-environment.sh` - 환경별 자동 설정
-- `run-lab.sh` - 통합 실습 메뉴
-- `cleanup-all.sh` - 전체 환경 정리
-
-### 개별 Lab 스크립트
-- `lab-00-env-check.sh` - 환경 사전 검증
-- `lab-01-operator-install.sh` - MinIO Operator 설치
-- `lab-02-tenant-deploy.sh` - MinIO Tenant 배포
-- `lab-03-client-setup.sh` - MinIO Client 설정
-- `lab-04-advanced-s3.sh` - S3 API 고급 기능
-- `lab-05-performance-test.sh` - 성능 테스트
-- `lab-06-user-management.sh` - 사용자 및 권한 관리
 
 ### Kubernetes 환경 구성
 - `setup-k8s-environment.sh` - Kubernetes 클러스터 설치
