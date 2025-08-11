@@ -145,7 +145,7 @@ MinIO Operator는 kustomize를 통해 설치할 수 있습니다. 이 방법은 
 
 ### 🔍 실행할 명령어
 ```bash
-# 공식 MinIO Operator v7.1.1 설치 (GitHub 공식 방법)
+# 공식 MinIO Operator 설치 (GitHub 공식 방법)
 kubectl kustomize github.com/minio/operator\?ref=v7.1.1 | kubectl apply -f -
 ```
 
@@ -541,3 +541,16 @@ kubectl get clusterrolebinding | grep minio || echo "✅ ClusterRoleBinding 삭�
 - [MinIO Operator 공식 문서](https://min.io/docs/minio/kubernetes/upstream/)
 - [Kubernetes Operator 패턴](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
 - [Custom Resource Definitions](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)
+
+---
+
+## 📋 기준 버전 정보
+
+이 가이드는 다음 버전을 기준으로 작성되었습니다:
+
+- **MinIO Operator**: v7.1.1 (2025-04-23 릴리스)
+- **MinIO Server**: RELEASE.2025-04-08T15-41-24Z
+- **Kubernetes**: 1.20+
+- **CRD API**: minio.min.io/v2
+
+**공식 저장소**: https://github.com/minio/operator

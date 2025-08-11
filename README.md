@@ -48,14 +48,14 @@ kubectl get nodes
 ## 🏷️ 사용되는 소프트웨어 버전
 
 ### MinIO Operator (공식 GitHub 기준)
-- **GitHub 공식 릴리스**: v7.1.1 (2025-04-23 릴리스)
-- **컨테이너 이미지**: minio/operator:v7.1.1
+- **GitHub 공식 릴리스**: 최신 안정 버전
+- **컨테이너 이미지**: minio/operator
 - **CRD API 버전**: minio.min.io/v2
-- **사이드카 이미지**: quay.io/minio/operator-sidecar:v7.0.1
+- **사이드카 이미지**: quay.io/minio/operator-sidecar
 
 ### MinIO 서버 (공식 기본값)
-- **기본 이미지**: minio/minio:RELEASE.2025-04-08T15-41-24Z
-- **최신 버전**: RELEASE.2025-07-23T15-54-02Z
+- **기본 이미지**: minio/minio (공식 기본값)
+- **최신 버전**: 최신 릴리스 버전
 - **버전 패턴**: RELEASE.YYYY-MM-DDTHH-MM-SSZ
 
 ### 호환성 정보
@@ -65,12 +65,12 @@ kubectl get nodes
 
 ### 공식 GitHub 저장소
 - **저장소**: https://github.com/minio/operator
-- **공식 설치 방법**: `kubectl kustomize github.com/minio/operator\?ref=v7.1.1`
+- **공식 설치 방법**: `kubectl kustomize github.com/minio/operator\?ref=<version>`
 - **공식 예제**: examples/kustomization/base/
 - **버전 일치성**: 릴리스 태그와 컨테이너 이미지 완전 일치
 
 ### 버전 선택 가이드
-- **학습 환경**: 공식 v7.1.1 버전 사용 권장
+- **학습 환경**: 공식 최신 버전 사용 권장
 - **프로덕션**: 특정 버전 고정 권장
 - **최신 기능**: GitHub 최신 릴리스 사용
 
@@ -453,3 +453,18 @@ kubectl delete namespace minio-operator
 **💡 팁**: 처음 사용하는 경우 단일 노드 환경으로 시작하여 MinIO의 기본 개념을 익힌 후, 다중 노드 환경으로 확장하는 것을 권장합니다.
 
 **⚠️ 주의**: 이 실습 가이드는 학습 목적으로 설계되었습니다. 프로덕션 환경에서는 보안, 네트워크, 백업 등 추가 고려사항이 필요합니다.
+
+---
+
+## 📋 기준 버전 정보
+
+이 실습 가이드는 다음 버전을 기준으로 작성되었습니다:
+
+- **MinIO Operator**: v7.1.1 (2025-04-23 릴리스)
+- **MinIO Server**: RELEASE.2025-04-08T15-41-24Z
+- **MinIO Client**: RELEASE.2025-07-23T15-54-02Z
+- **Kubernetes**: 1.20+ (테스트: v1.28.15)
+- **CRD API**: minio.min.io/v2
+
+**공식 저장소**: https://github.com/minio/operator  
+**공식 설치**: `kubectl kustomize github.com/minio/operator\?ref=v7.1.1`

@@ -2,21 +2,7 @@
 
 ## 📚 개요
 
-Lab 1에서는 공식 GitHub MinIO Operator v7.1.1을 설치하면서 현대적인 Kubernetes 네이티브 애플리케이션 관리의 핵심 개념을 학습합니다. Operator 패턴, CRD 기반 선언적 관리, 그리고 실제 프로덕션 환경에서의 운영 자동화를 이해합니다.
-
-## 🏷️ 공식 MinIO Operator v7.1.1 정보
-
-### 공식 릴리스 정보
-- **GitHub 저장소**: https://github.com/minio/operator
-- **최신 릴리스**: v7.1.1 (2025-04-23)
-- **컨테이너 이미지**: minio/operator:v7.1.1
-- **공식 설치**: `kubectl kustomize github.com/minio/operator\?ref=v7.1.1`
-
-### 아키텍처 구성 요소
-- **CRD API 버전**: minio.min.io/v2
-- **사이드카 이미지**: quay.io/minio/operator-sidecar:v7.0.1
-- **기본 MinIO 서버**: minio/minio:RELEASE.2025-04-08T15-41-24Z
-- **지원 Kubernetes**: 1.20+
+Lab 1에서는 공식 GitHub MinIO Operator를 설치하면서 현대적인 Kubernetes 네이티브 애플리케이션 관리의 핵심 개념을 학습합니다. Operator 패턴, CRD 기반 선언적 관리, 그리고 실제 프로덕션 환경에서의 운영 자동화를 이해합니다.
 
 ## 🔍 핵심 개념 1: Kubernetes Operator 패턴의 진화
 
@@ -35,7 +21,7 @@ spec:
     spec:
       containers:
       - name: minio
-        image: minio/minio:RELEASE.2025-04-08T15-41-24Z
+        image: minio/minio:latest
         # 수십 줄의 복잡한 설정...
 ---
 apiVersion: v1
@@ -54,7 +40,7 @@ kind: ConfigMap
 - ❌ **전문 지식 의존**: 각 구성 요소의 깊은 이해 필요
 - ❌ **오류 가능성**: 수동 작업으로 인한 휴먼 에러
 
-### MinIO Operator v7.1.1의 혁신적 접근
+### MinIO Operator의 혁신적 접근
 
 #### 선언적 관리의 힘
 ```yaml
@@ -72,14 +58,14 @@ metadata:
     prometheus.io/path: /minio/v2/metrics/cluster
     prometheus.io/port: "9000"
 spec:
-  # 고급 기능 설정 (v7.1.1)
+  # 고급 기능 설정
   features:
     bucketDNS: true
     domains:
       minio: "minio.company.com"
       console: "console.company.com"
   
-  # 자동 사용자 관리 (v7.1.1)
+  # 자동 사용자 관리
   users:
     - name: app-user
     - name: backup-user
@@ -96,13 +82,13 @@ spec:
           requests:
             storage: 100Gi
   
-  # 운영 정책 (v7.1.1)
+  # 운영 정책
   podManagementPolicy: Parallel
   
-  # 모니터링 통합 (v7.1.1)
+  # 모니터링 통합
   prometheusOperator: true
   
-  # 라이프사이클 관리 (v7.1.1)
+  # 라이프사이클 관리
   lifecycle:
     postStart:
       exec:
@@ -116,7 +102,7 @@ spec:
 - ✅ **일관성 보장**: 모든 환경에서 동일한 배포 및 관리
 - ✅ **자가 치유**: 장애 발생 시 자동 복구
 
-## 🔍 핵심 개념 2: MinIO Operator v7.1.1 아키텍처
+## 🔍 핵심 개념 2: MinIO Operator 아키텍처
 
 ### 전체 시스템 구조
 
@@ -148,15 +134,15 @@ spec:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### v7.1.1 핵심 구성 요소
+### 핵심 구성 요소
 
 #### 1. Operator Controller
 ```go
-// v7.1.1 Controller의 핵심 로직 (의사코드)
+// Controller의 핵심 로직 (의사코드)
 type TenantController struct {
     client.Client
     Scheme *runtime.Scheme
-    STSEnabled bool  // v7.1.1에서 기본 활성화
+    STSEnabled bool  // 기본 활성화
 }
 
 func (r *TenantController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -166,24 +152,24 @@ func (r *TenantController) Reconcile(ctx context.Context, req ctrl.Request) (ctr
         return ctrl.Result{}, client.IgnoreNotFound(err)
     }
     
-    // 2. v7.1.1 신규 기능 처리
+    // 2. 신규 기능 처리
     if err := r.handleFeatures(ctx, tenant); err != nil {
         return ctrl.Result{}, err
     }
     
-    // 3. STS 정책 관리 (v7.1.1 강화)
+    // 3. STS 정책 관리 (강화됨)
     if r.STSEnabled {
         if err := r.reconcileSTSPolicies(ctx, tenant); err != nil {
             return ctrl.Result{}, err
         }
     }
     
-    // 4. 사용자 자동 생성 (v7.1.1)
+    // 4. 사용자 자동 생성
     if err := r.reconcileUsers(ctx, tenant); err != nil {
         return ctrl.Result{}, err
     }
     
-    // 5. 모니터링 설정 (v7.1.1)
+    // 5. 모니터링 설정
     if tenant.Spec.PrometheusOperator {
         if err := r.setupMonitoring(ctx, tenant); err != nil {
             return ctrl.Result{}, err
@@ -212,7 +198,7 @@ metadata:
 spec:
   group: minio.min.io
   versions:
-  - name: v2  # v7.1.1에서 사용하는 API 버전
+  - name: v2  # 현재 사용하는 API 버전
     served: true
     storage: true
     schema:
@@ -222,7 +208,7 @@ spec:
           spec:
             type: object
             properties:
-              # v7.1.1 신규 필드들
+              # 신규 필드들
               features:
                 type: object
                 properties:
@@ -248,7 +234,7 @@ spec:
                     type: object
 ```
 
-**policybindings.sts.min.io (v7.1.1 신규)**
+**policybindings.sts.min.io (신규 CRD)**
 ```yaml
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -294,7 +280,7 @@ spec:
     name: minio-operator
 
 ---
-# STS 서비스 (v7.1.1에서 강화)
+# STS 서비스 (강화됨)
 apiVersion: v1
 kind: Service
 metadata:
@@ -309,7 +295,7 @@ spec:
     name: minio-operator
 ```
 
-## 🔍 핵심 개념 3: v7.1.1의 혁신적 기능들
+## 🔍 핵심 개념 3: 혁신적 기능들
 
 ### 1. 고급 기능 관리 (Features)
 
@@ -400,7 +386,7 @@ spec:
 - **로깅**: 라이프사이클 이벤트 기록
 - **헬스체크**: 시작 완료 확인
 
-## 🔍 핵심 개념 4: v7.1.1 운영 자동화
+## 🔍 핵심 개념 4: 운영 자동화
 
 ### 1. 자동 스케일링
 
@@ -435,7 +421,7 @@ spec:
 ```yaml
 # 이미지 버전 업데이트
 spec:
-  image: minio/minio:RELEASE.2025-07-23T15-54-02Z  # 새 버전
+  image: minio/minio:latest  # 새 버전
 ```
 
 **무중단 업그레이드 과정**:
@@ -561,7 +547,7 @@ spec:
   requestAutoCert: false
 ```
 
-## 🎯 v7.1.1의 핵심 가치
+## 🎯 핵심 가치
 
 ### 1. 운영 복잡성 제거
 - **Before**: 수십 개 YAML 파일, 복잡한 스크립트
@@ -581,13 +567,28 @@ spec:
 
 ## 🚀 다음 단계
 
-Lab 1을 통해 MinIO Operator v7.1.1의 핵심 개념을 이해했다면:
+Lab 1을 통해 MinIO Operator의 핵심 개념을 이해했다면:
 
 1. **Lab 2**: 실제 Tenant 배포 및 동적 프로비저닝 체험
 2. **Lab 3**: MinIO Client를 통한 S3 API 활용
 3. **Lab 4+**: 고급 기능 및 운영 시나리오 실습
 
-MinIO Operator v7.1.1은 단순한 배포 도구가 아닌, **Kubernetes 네이티브 객체 스토리지 플랫폼**입니다. 이를 통해 현대적인 클라우드 네이티브 애플리케이션의 스토리지 요구사항을 완벽하게 충족할 수 있습니다.
+MinIO Operator는 단순한 배포 도구가 아닌, **Kubernetes 네이티브 객체 스토리지 플랫폼**입니다. 이를 통해 현대적인 클라우드 네이티브 애플리케이션의 스토리지 요구사항을 완벽하게 충족할 수 있습니다.
+
+---
+
+## 📋 기준 버전 정보
+
+이 문서는 다음 버전을 기준으로 작성되었습니다:
+
+- **MinIO Operator**: v7.1.1 (2025-04-23 릴리스)
+- **MinIO Server**: RELEASE.2025-04-08T15-41-24Z
+- **MinIO Client**: RELEASE.2025-07-23T15-54-02Z
+- **Kubernetes**: 1.20+
+- **CRD API**: minio.min.io/v2
+
+**공식 저장소**: https://github.com/minio/operator  
+**공식 설치**: `kubectl kustomize github.com/minio/operator\?ref=v7.1.1`
 apiVersion: minio.min.io/v2
 kind: Tenant
 spec:
