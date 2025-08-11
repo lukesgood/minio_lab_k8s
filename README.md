@@ -347,59 +347,57 @@ time mc cp test-*.dat local/test-bucket/
 ./setup-environment.sh
 ```
 
-### 2. 실습 실행
+### 2. 실습 실행 (단계별 가이드 방식)
 
-#### 통합 메뉴 방식 (권장)
+#### 📖 단계별 실습 가이드 (권장)
+이제 자동화된 스크립트 대신 상세한 단계별 가이드를 따라 실습을 진행합니다:
+
 ```bash
-# 인터랙티브 실습 메뉴 실행
-./run-lab.sh
+# 각 Lab의 상세 가이드 문서를 참조하여 단계별로 실습 진행
+# docs/ 디렉토리의 LAB-XX-GUIDE.md 파일들을 순서대로 따라하세요
 
-# 메뉴에서 원하는 Lab 선택:
-# 0: 환경 사전 검증
-# 1: MinIO Operator 설치  
-# 2: MinIO Tenant 배포
-# 3: MinIO Client 및 기본 사용법
-# 4: S3 API 고급 기능
-# 5: 성능 테스트
-# 6: 사용자 및 권한 관리
-# 7: 모니터링 설정 (선택)
-# 8: Helm Chart 실습 (선택)
-# 9: 정적 웹사이트 호스팅 (선택)
-# 10: 백업 및 재해 복구 (선택)
+# Core Labs (필수 실습)
+docs/LAB-00-GUIDE.md  # 환경 사전 검증
+docs/LAB-01-GUIDE.md  # MinIO Operator 설치
+docs/LAB-02-GUIDE.md  # MinIO Tenant 배포
+docs/LAB-03-GUIDE.md  # MinIO Client 및 기본 사용법
+
+# Advanced Labs (권장 실습)
+docs/LAB-04-GUIDE.md  # S3 API 고급 기능 (예정)
+docs/LAB-05-GUIDE.md  # 성능 테스트 (예정)
+docs/LAB-06-GUIDE.md  # 사용자 및 권한 관리 (예정)
+
+# Optional Labs (선택 실습)
+docs/LAB-07-GUIDE.md  # 모니터링 설정 (예정)
+docs/LAB-08-GUIDE.md  # Helm Chart 실습 (예정)
+docs/LAB-09-GUIDE.md  # 정적 웹사이트 호스팅 (예정)
+docs/LAB-10-GUIDE.md  # 백업 및 재해 복구 (예정)
 ```
 
-#### 개별 스크립트 실행 방식
+#### 🤖 자동화 스크립트 방식 (기존 방식)
+환경 설정 스크립트는 계속 사용 가능합니다:
+
 ```bash
-# 순서대로 개별 실행
-./lab-00-env-check.sh
-./lab-01-operator-install.sh
-./lab-02-tenant-deploy.sh
-./lab-03-client-setup.sh
-./lab-04-advanced-s3.sh
-./lab-05-performance-test.sh
-./lab-06-user-management.sh
+# 환경 설정 자동화 (여전히 유용)
+./setup-k8s-environment.sh  # Kubernetes 환경 구성
+./detect-environment.sh     # 환경 자동 감지
+./setup-environment.sh      # 환경 자동 설정
 
-# 선택적 고급 실습
-./lab-07-monitoring.sh
-./lab-08-helm-chart.sh
-./lab-09-static-website.sh
-./lab-10-backup-recovery.sh
-
-# 또는 필요한 Lab만 선택적으로 실행
-./lab-03-client-setup.sh  # MinIO Client 설정만
-./lab-05-performance-test.sh  # 성능 테스트만
-./lab-10-backup-recovery.sh  # 백업 및 재해 복구만
+# 기존 자동화 스크립트들 (참고용으로 유지)
+./lab-00-env-check.sh       # 환경 검증 스크립트
+./lab-01-operator-install.sh # Operator 설치 스크립트
+./lab-02-tenant-deploy.sh   # Tenant 배포 스크립트
+# ... 기타 스크립트들
 ```
 
 ### 3. 실습 완료 후 정리
 ```bash
-# run-lab.sh 메뉴에서 '11' 선택하여 전체 정리
-# 또는 전용 정리 스크립트 실행:
-./cleanup-all.sh
-
-# 또는 수동 정리:
+# 수동 정리 (가이드에서 안내)
 kubectl delete namespace minio-tenant
 kubectl delete namespace minio-operator
+
+# 또는 정리 스크립트 사용
+./cleanup-all.sh
 ```
 
 ## 📖 추가 리소스
