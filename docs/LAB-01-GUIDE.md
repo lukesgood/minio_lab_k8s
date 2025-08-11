@@ -440,6 +440,46 @@ MinIO Operator 설치가 완료되었습니다! 이제 다음 단계로 진행�
 cat docs/LAB-02-GUIDE.md
 ```
 
+---
+
+## 🧹 LAB-01 정리 (선택사항)
+
+### 💡 언제 사용하나요?
+- LAB-01을 다시 처음부터 테스트하고 싶을 때
+- 설치 과정에서 문제가 발생하여 깨끗하게 재시작하고 싶을 때
+- 다른 버전의 MinIO Operator를 테스트하고 싶을 때
+
+### 🔍 완전 삭제 명령어
+```bash
+# 1. MinIO Operator 네임스페이스 삭제 (모든 리소스 포함)
+kubectl delete namespace minio-operator
+
+# 2. CRD 삭제
+kubectl delete crd tenants.minio.min.io
+
+# 3. ClusterRole 삭제
+kubectl delete clusterrole minio-operator-role
+
+# 4. ClusterRoleBinding 삭제
+kubectl delete clusterrolebinding minio-operator-binding
+```
+
+### ✅ 삭제 확인
+```bash
+echo "=== MinIO Operator 삭제 확인 ==="
+kubectl get ns | grep minio || echo "✅ 네임스페이스 삭제됨"
+kubectl get crd | grep minio || echo "✅ CRDs 삭제됨"
+kubectl get clusterrole | grep minio || echo "✅ ClusterRole 삭제됨"
+kubectl get clusterrolebinding | grep minio || echo "✅ ClusterRoleBinding 삭제됨"
+```
+
+### ⚠️ 주의사항
+- 이 명령어들은 MinIO Operator와 관련된 모든 설정을 삭제합니다
+- 삭제 후에는 LAB-01부터 다시 시작해야 합니다
+- 실제 운영 환경에서는 신중하게 사용하세요
+
+---
+
 ## 📚 참고 자료
 
 - [MinIO Operator 공식 문서](https://min.io/docs/minio/kubernetes/upstream/)
