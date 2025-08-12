@@ -1,0 +1,63 @@
+# Temporary files
+*.tmp
+*.log
+*~
+
+# Test files generated during workshop
+test-*.txt
+test-*.dat
+downloaded-*
+backup-test-data/
+local-data/
+local-docs/
+batch-test/
+batch-download/
+concurrent-download-*
+monitor-test-*
+health-test*
+version-test.txt
+shared-new.txt
+public-write.txt
+
+# Workshop generated files
+backup-manifest-*.txt
+performance-baseline.txt
+workshop-completion-certificate.txt
+resource-monitor.log
+backup-monitoring-queries.txt
+security-monitoring-rules.yaml
+compliance-report.txt
+
+# Certificate files (workshop generates these)
+*.key
+*.crt
+*.csr
+*.conf
+minio.csr.conf
+
+# Policy files (generated during workshop)
+*-policy.json
+grafana-datasource.json
+minio-dashboard.json
+
+# Kubernetes generated files
+*.yaml.bak
+*-backup-*.yaml
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git files
+.git/
