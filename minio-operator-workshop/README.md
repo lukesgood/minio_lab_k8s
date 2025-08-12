@@ -84,6 +84,7 @@ cat README.md
 - [MinIO Operator GitHub](https://github.com/minio/operator)
 - [Troubleshooting Guide](docs/troubleshooting.md)
 - [Best Practices](docs/best-practices.md)
+- [Change PV Paths Guide](docs/change-pv-paths.md)
 
 ## 🤝 Support
 
