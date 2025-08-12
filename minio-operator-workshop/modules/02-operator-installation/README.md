@@ -108,13 +108,13 @@ Operator ready
 kubectl create namespace tenant-lite
 
 # Download official tenant example
-curl -O https://raw.githubusercontent.com/minio/operator/master/examples/tenant-lite.yaml
+curl -O https://raw.githubusercontent.com/minio/operator/master/examples/kustomization/tenant-lite/tenant.yaml
 
 # Examine the official tenant configuration
-cat tenant-lite.yaml
+cat tenant.yaml
 
 # Test tenant resource validation (dry-run)
-kubectl apply -f tenant-lite.yaml --dry-run=client
+kubectl apply -f tenant.yaml --dry-run=client
 ```
 
 **Expected Output:**

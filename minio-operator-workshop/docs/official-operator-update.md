@@ -142,7 +142,7 @@ minio/operator/
 ├── docs/                   # Official documentation
 ├── examples/               # Official examples
 │   ├── tenant.yaml         # Basic tenant example
-│   ├── tenant-lite.yaml    # Lightweight tenant
+│   ├── tenant.yaml         # Basic tenant example
 │   └── kustomization/      # Kustomize examples
 ├── helm/                   # Official Helm charts
 ├── pkg/                    # Operator packages
@@ -155,7 +155,7 @@ minio/operator/
 examples/tenant.yaml
 
 # Lightweight tenant
-examples/tenant-lite.yaml
+examples/kustomization/tenant-lite/tenant.yaml
 
 # With external storage
 examples/tenant-external-storage.yaml
@@ -181,13 +181,13 @@ kubectl get crd tenants.minio.min.io
 ### Phase 2: Official Tenant Deployment
 ```bash
 # 1. Use official tenant example
-curl -O https://raw.githubusercontent.com/minio/operator/master/examples/tenant-lite.yaml
+curl -O https://raw.githubusercontent.com/minio/operator/master/examples/kustomization/tenant-lite/tenant.yaml
 
 # 2. Customize for workshop
-sed -i 's/tenant-lite/minio-workshop/g' tenant-lite.yaml
+sed -i 's/tenant-lite/minio-workshop/g' tenant.yaml
 
 # 3. Deploy tenant
-kubectl apply -f tenant-lite.yaml
+kubectl apply -f tenant.yaml
 ```
 
 ### Phase 3: Official Console Access
@@ -242,7 +242,7 @@ export MINIO_ROOT_PASSWORD=\"password123\"" \
   -n $NAMESPACE
 
 # Download and customize official tenant example
-curl -s https://raw.githubusercontent.com/minio/operator/master/examples/tenant-lite.yaml | \
+curl -s https://raw.githubusercontent.com/minio/operator/master/examples/kustomization/tenant-lite/tenant.yaml | \
 sed "s/tenant-lite/$TENANT_NAME/g" | \
 sed "s/namespace: tenant-lite/namespace: $NAMESPACE/g" | \
 kubectl apply -f -

@@ -29,10 +29,10 @@ MinIO uses official images hosted on Quay.io:
 
 ```bash
 # Download the official tenant-lite example
-curl -O https://raw.githubusercontent.com/minio/operator/master/examples/tenant-lite.yaml
+curl -O https://raw.githubusercontent.com/minio/operator/master/examples/kustomization/tenant-lite/tenant.yaml
 
 # Examine the official configuration
-cat tenant-lite.yaml
+cat tenant.yaml
 ```
 
 ### Step 2: Create Namespace and Credentials (Official Format)
@@ -60,10 +60,10 @@ kubectl create secret generic tenant-lite-console-secret \
 
 ```bash
 # Apply the official tenant configuration
-kubectl apply -f tenant-lite.yaml
+kubectl apply -f tenant.yaml
 
 # Alternative: Apply directly from GitHub
-kubectl apply -f https://raw.githubusercontent.com/minio/operator/master/examples/tenant-lite.yaml
+kubectl apply -f https://raw.githubusercontent.com/minio/operator/master/examples/kustomization/tenant-lite/tenant.yaml
 ```
 
 ### Step 4: Watch Real-Time Provisioning (Official Resources)
