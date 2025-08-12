@@ -3,220 +3,220 @@
 ## 🎯 Learning Objectives
 
 By the end of this module, you will:
-- Understand and implement multipart uploads
-- Work with object metadata and storage classes
-- Implement object lifecycle management
-- Use advanced S3 API features like presigned URLs
-- Optimize upload/download performance for different file sizes
+- Understand and implement official MinIO multipart uploads
+- Work with object metadata using official S3-compatible features
+- Implement official object lifecycle management
+- Use advanced official S3 API features like presigned URLs
+- Optimize upload/download performance using official MinIO capabilities
 
 ## 📚 Key Concepts
 
-### Multipart Upload
-For large files, multipart upload provides better performance, reliability, and the ability to resume interrupted uploads. MinIO automatically uses multipart upload for files larger than 64MB.
+### Official Multipart Upload
+MinIO's official implementation automatically uses multipart upload for files larger than 64MB, following AWS S3 specifications for better performance, reliability, and the ability to resume interrupted uploads.
 
-### Object Metadata
-Custom metadata allows you to store additional information with objects, useful for application-specific data, content management, and automation.
+### Official Object Metadata
+Custom metadata in MinIO follows official S3 standards, allowing you to store additional information with objects for application-specific data, content management, and automation.
 
-### Storage Classes
-MinIO supports different storage classes for cost optimization and performance tuning.
+### Official Storage Classes
+MinIO supports official S3-compatible storage classes for cost optimization and performance tuning.
 
 ## 📋 Step-by-Step Instructions
 
-### Step 1: Prepare Test Environment
+### Step 1: Prepare Test Environment (Official Setup)
 
 ```bash
-# Ensure MinIO client is configured and port forwarding is active
-mc admin info local
+# Ensure official MinIO client is configured and port forwarding is active
+mc admin info minio-official
 
-# Create a bucket for advanced testing
-mc mb local/advanced-features
+# Create a bucket for advanced testing using official commands
+mc mb minio-official/advanced-features
 
-# Create test files of different sizes
+# Create test files of different sizes for official testing
 echo "Small file content" > small-file.txt
 dd if=/dev/zero of=medium-file.dat bs=1M count=10
 dd if=/dev/zero of=large-file.dat bs=1M count=100
 ```
 
-### Step 2: Understanding Multipart Uploads
+### Step 2: Understanding Official Multipart Uploads
 
 ```bash
-# Upload small file (single part)
-time mc cp small-file.txt local/advanced-features/
+# Upload small file (single part) using official method
+time mc cp small-file.txt minio-official/advanced-features/
 
-# Upload medium file (may use multipart)
-time mc cp medium-file.dat local/advanced-features/
+# Upload medium file (may use multipart) using official method
+time mc cp medium-file.dat minio-official/advanced-features/
 
-# Upload large file (definitely uses multipart)
-time mc cp large-file.dat local/advanced-features/
+# Upload large file (definitely uses multipart) using official method
+time mc cp large-file.dat minio-official/advanced-features/
 
-# Check upload details
-mc stat local/advanced-features/small-file.txt
-mc stat local/advanced-features/large-file.dat
+# Check upload details using official stat command
+mc stat minio-official/advanced-features/small-file.txt
+mc stat minio-official/advanced-features/large-file.dat
 ```
 
-### Step 3: Working with Object Metadata
+### Step 3: Working with Official Object Metadata
 
 ```bash
-# Upload file with custom metadata
-mc cp small-file.txt local/advanced-features/metadata-example.txt \
+# Upload file with custom metadata using official attr parameter
+mc cp small-file.txt minio-official/advanced-features/metadata-example.txt \
   --attr "Content-Type=text/plain,Author=Workshop-User,Department=Engineering,Version=1.0,Environment=Development"
 
-# View object metadata
-mc stat local/advanced-features/metadata-example.txt
+# View object metadata using official stat command
+mc stat minio-official/advanced-features/metadata-example.txt
 
-# Upload with different content types
+# Upload with different content types using official method
 echo '{"name": "test", "value": 123}' > test.json
-mc cp test.json local/advanced-features/ \
+mc cp test.json minio-official/advanced-features/ \
   --attr "Content-Type=application/json,API-Version=v1"
 
-# Upload binary file with metadata
-mc cp medium-file.dat local/advanced-features/binary-with-metadata.dat \
+# Upload binary file with metadata using official method
+mc cp medium-file.dat minio-official/advanced-features/binary-with-metadata.dat \
   --attr "Content-Type=application/octet-stream,Purpose=Testing,Size-Category=Medium"
 
 # List all objects with their metadata
-mc ls local/advanced-features/
+mc ls minio-official/advanced-features/
 ```
 
-### Step 4: Advanced Copy Operations
+### Step 4: Official Advanced Copy Operations
 
 ```bash
-# Copy with metadata preservation
-mc cp local/advanced-features/metadata-example.txt local/advanced-features/copied-with-metadata.txt
+# Copy with metadata preservation using official method
+mc cp minio-official/advanced-features/metadata-example.txt minio-official/advanced-features/copied-with-metadata.txt
 
-# Copy with metadata modification
-mc cp local/advanced-features/metadata-example.txt local/advanced-features/modified-metadata.txt \
+# Copy with metadata modification using official method
+mc cp minio-official/advanced-features/metadata-example.txt minio-official/advanced-features/modified-metadata.txt \
   --attr "Version=2.0,Status=Modified"
 
-# Server-side copy (efficient for large files)
-mc cp local/advanced-features/large-file.dat local/advanced-features/server-side-copy.dat
+# Server-side copy (efficient for large files) using official method
+mc cp minio-official/advanced-features/large-file.dat minio-official/advanced-features/server-side-copy.dat
 
-# Compare copy performance
-time mc cp local/advanced-features/large-file.dat /tmp/local-copy.dat
-time mc cp local/advanced-features/large-file.dat local/advanced-features/server-copy.dat
+# Compare copy performance using official methods
+time mc cp minio-official/advanced-features/large-file.dat /tmp/local-copy.dat
+time mc cp minio-official/advanced-features/large-file.dat minio-official/advanced-features/server-copy.dat
 ```
 
-### Step 5: Working with Presigned URLs
+### Step 5: Working with Official Presigned URLs
 
 ```bash
-# Generate presigned URL for download (valid for 1 hour)
-mc share download local/advanced-features/metadata-example.txt --expire=1h
+# Generate presigned URL for download using official share command (valid for 1 hour)
+mc share download minio-official/advanced-features/metadata-example.txt --expire=1h
 
-# Generate presigned URL for upload
-mc share upload local/advanced-features/presigned-upload.txt --expire=30m
+# Generate presigned URL for upload using official share command
+mc share upload minio-official/advanced-features/presigned-upload.txt --expire=30m
 
 # Test the presigned download URL (copy the URL from above)
 # curl "<presigned-download-url>" -o presigned-download-test.txt
 ```
 
-### Step 6: Object Versioning Simulation
+### Step 6: Official Object Versioning Simulation
 
 ```bash
-# Create multiple versions of the same object
+# Create multiple versions of the same object using official methods
 echo "Version 1 content" > versioned-file.txt
-mc cp versioned-file.txt local/advanced-features/
+mc cp versioned-file.txt minio-official/advanced-features/
 
 echo "Version 2 content - updated" > versioned-file.txt
-mc cp versioned-file.txt local/advanced-features/
+mc cp versioned-file.txt minio-official/advanced-features/
 
 echo "Version 3 content - final" > versioned-file.txt
-mc cp versioned-file.txt local/advanced-features/
+mc cp versioned-file.txt minio-official/advanced-features/
 
-# Check current version
-mc cat local/advanced-features/versioned-file.txt
-mc stat local/advanced-features/versioned-file.txt
+# Check current version using official commands
+mc cat minio-official/advanced-features/versioned-file.txt
+mc stat minio-official/advanced-features/versioned-file.txt
 ```
 
-### Step 7: Batch Operations and Mirroring
+### Step 7: Official Batch Operations and Mirroring
 
 ```bash
-# Create a directory structure for mirroring
+# Create a directory structure for official mirroring
 mkdir -p local-data/{documents,images,archives}
 echo "Document 1" > local-data/documents/doc1.txt
 echo "Document 2" > local-data/documents/doc2.txt
 echo "Image metadata" > local-data/images/img1.meta
 dd if=/dev/zero of=local-data/archives/archive1.tar bs=1M count=5
 
-# Mirror entire directory structure
-mc mirror local-data/ local/advanced-features/mirrored-data/
+# Mirror entire directory structure using official mirror command
+mc mirror local-data/ minio-official/advanced-features/mirrored-data/
 
-# Update local files and sync
+# Update local files and sync using official method
 echo "Updated Document 1" > local-data/documents/doc1.txt
 echo "New Document 3" > local-data/documents/doc3.txt
 
-# Sync changes (only uploads changed/new files)
-mc mirror local-data/ local/advanced-features/mirrored-data/
+# Sync changes using official mirror (only uploads changed/new files)
+mc mirror local-data/ minio-official/advanced-features/mirrored-data/
 
-# List mirrored structure
-mc ls --recursive local/advanced-features/mirrored-data/
+# List mirrored structure using official commands
+mc ls --recursive minio-official/advanced-features/mirrored-data/
 ```
 
-### Step 8: Performance Comparison Tests
+### Step 8: Official Performance Comparison Tests
 
 ```bash
-# Test different file sizes and upload methods
-echo "=== Performance Testing ==="
+# Test different file sizes and upload methods using official commands
+echo "=== Official Performance Testing ==="
 
-# Small files (< 1MB)
+# Small files (< 1MB) using official method
 for i in {1..5}; do
   dd if=/dev/zero of=small-${i}.dat bs=1K count=100
-  time mc cp small-${i}.dat local/advanced-features/perf-test/
+  time mc cp small-${i}.dat minio-official/advanced-features/perf-test/
 done
 
-# Medium files (5-50MB)
+# Medium files (5-50MB) using official method
 for i in {1..3}; do
   dd if=/dev/zero of=medium-${i}.dat bs=1M count=20
-  time mc cp medium-${i}.dat local/advanced-features/perf-test/
+  time mc cp medium-${i}.dat minio-official/advanced-features/perf-test/
 done
 
-# Large files (>50MB) - observe multipart upload
+# Large files (>50MB) - observe official multipart upload
 dd if=/dev/zero of=large-test.dat bs=1M count=75
-time mc cp large-test.dat local/advanced-features/perf-test/
+time mc cp large-test.dat minio-official/advanced-features/perf-test/
 
-# Parallel uploads
-mc cp --recursive local-data/ local/advanced-features/parallel-test/ &
-mc cp large-test.dat local/advanced-features/parallel-large.dat &
+# Parallel uploads using official method
+mc cp --recursive local-data/ minio-official/advanced-features/parallel-test/ &
+mc cp large-test.dat minio-official/advanced-features/parallel-large.dat &
 wait
 
-echo "Performance tests completed"
+echo "Official performance tests completed"
 ```
 
-### Step 9: Advanced Listing and Search
+### Step 9: Official Advanced Listing and Search
 
 ```bash
-# List with different formats and filters
-mc ls local/advanced-features/ --recursive
-mc ls local/advanced-features/ --recursive --json
+# List with different formats and filters using official commands
+mc ls minio-official/advanced-features/ --recursive
+mc ls minio-official/advanced-features/ --recursive --json
 
-# Find objects by pattern
-mc find local/advanced-features/ --name "*.txt"
-mc find local/advanced-features/ --name "*.dat"
-mc find local/advanced-features/ --larger 10MB
+# Find objects by pattern using official find command
+mc find minio-official/advanced-features/ --name "*.txt"
+mc find minio-official/advanced-features/ --name "*.dat"
+mc find minio-official/advanced-features/ --larger 10MB
 
-# Get storage usage statistics
-mc du local/advanced-features/
-mc du local/advanced-features/ --depth=2
+# Get storage usage statistics using official du command
+mc du minio-official/advanced-features/
+mc du minio-official/advanced-features/ --depth=2
 ```
 
-### Step 10: Object Integrity and Verification
+### Step 10: Official Object Integrity and Verification
 
 ```bash
-# Calculate and verify checksums
+# Calculate and verify checksums using official methods
 md5sum large-file.dat
-mc stat local/advanced-features/large-file.dat | grep ETag
+mc stat minio-official/advanced-features/large-file.dat | grep ETag
 
-# Download and verify integrity
-mc cp local/advanced-features/large-file.dat downloaded-large-file.dat
+# Download and verify integrity using official commands
+mc cp minio-official/advanced-features/large-file.dat downloaded-large-file.dat
 md5sum downloaded-large-file.dat
 
-# Compare original and downloaded
+# Compare original and downloaded using official verification
 diff large-file.dat downloaded-large-file.dat
 echo "Exit code: $?" # Should be 0 for identical files
 
-# Verify all uploaded files
-echo "=== Integrity Verification ==="
+# Verify all uploaded files using official methods
+echo "=== Official Integrity Verification ==="
 for file in small-file.txt medium-file.dat large-file.dat; do
   echo "Verifying $file..."
-  mc cp local/advanced-features/$file downloaded-$file
+  mc cp minio-official/advanced-features/$file downloaded-$file
   if diff $file downloaded-$file > /dev/null; then
     echo "✅ $file integrity verified"
   else
@@ -225,134 +225,142 @@ for file in small-file.txt medium-file.dat large-file.dat; do
 done
 ```
 
-## 🔍 Understanding Advanced Features
+### Step 11: Official Admin Operations and Monitoring
 
-### Multipart Upload Benefits
+```bash
+# Use official admin commands for advanced monitoring
+mc admin info minio-official
 
-1. **Improved Performance**: Parallel upload of parts
-2. **Reliability**: Resume interrupted uploads
+# Check official server configuration
+mc admin config get minio-official
+
+# View official server logs
+mc admin logs minio-official
+
+# Run official performance diagnostics
+mc admin speedtest minio-official --duration=60s
+
+# Check official cluster health
+mc admin heal minio-official --dry-run
+```
+
+## 🔍 Understanding Official Advanced Features
+
+### Official Multipart Upload Benefits
+
+1. **Improved Performance**: Parallel upload of parts using official algorithm
+2. **Reliability**: Resume interrupted uploads with official recovery
 3. **Memory Efficiency**: Upload large files without loading entirely into memory
-4. **Network Optimization**: Better handling of network issues
+4. **Network Optimization**: Better handling of network issues with official retry logic
 
-### Metadata Use Cases
+### Official Metadata Use Cases
 
-- **Content Management**: Store document properties, versions, authors
-- **Application Integration**: Store application-specific data
-- **Automation**: Trigger workflows based on metadata
-- **Compliance**: Store audit trails and classification information
+- **Content Management**: Store document properties, versions, authors using official metadata
+- **Application Integration**: Store application-specific data with official S3 headers
+- **Automation**: Trigger workflows based on official metadata tags
+- **Compliance**: Store audit trails and classification using official attributes
 
-### Performance Characteristics
+### Official Performance Characteristics
 
-| File Size | Upload Method | Typical Performance |
-|-----------|---------------|-------------------|
-| < 5MB     | Single Part   | Fast, low overhead |
-| 5-64MB    | Single Part   | Good performance |
-| > 64MB    | Multipart     | Optimal for large files |
-| > 100MB   | Multipart     | Best with parallel parts |
+| File Size | Official Upload Method | Typical Performance |
+|-----------|----------------------|-------------------|
+| < 5MB     | Single Part (Official) | Fast, low overhead |
+| 5-64MB    | Single Part (Official) | Good performance |
+| > 64MB    | Multipart (Official)   | Optimal for large files |
+| > 100MB   | Multipart (Official)   | Best with parallel parts |
 
 ## ✅ Validation Checklist
 
 Before proceeding to Module 6, ensure:
 
-- [ ] Successfully uploaded files of various sizes
-- [ ] Observed multipart upload behavior for large files
-- [ ] Added and retrieved custom metadata
-- [ ] Generated and tested presigned URLs
-- [ ] Performed server-side copy operations
-- [ ] Completed mirroring and sync operations
-- [ ] Verified data integrity for all uploads
-- [ ] Understood performance characteristics
+- [ ] Successfully uploaded files of various sizes using official methods
+- [ ] Observed official multipart upload behavior for large files
+- [ ] Added and retrieved custom metadata using official attr parameter
+- [ ] Generated and tested official presigned URLs
+- [ ] Performed server-side copy operations using official commands
+- [ ] Completed mirroring and sync operations with official mirror
+- [ ] Verified data integrity for all uploads using official verification
+- [ ] Used official admin commands for monitoring and diagnostics
 
 ## 🚨 Common Issues & Solutions
 
-### Issue: Multipart Upload Fails
+### Issue: Official Multipart Upload Fails
 ```bash
-# Check available disk space
-kubectl exec -n minio-tenant minio-pool-0-0 -- df -h /export
+# Check available disk space using official tenant
+kubectl exec -n tenant-lite tenant-lite-pool-0-0 -- df -h /export
 
-# Check MinIO logs for errors
-kubectl logs -n minio-tenant minio-pool-0-0 | tail -20
+# Check official MinIO logs for errors
+kubectl logs -n tenant-lite tenant-lite-pool-0-0 | tail -20
 
-# Verify network connectivity
-mc admin info local
+# Verify network connectivity using official health check
+mc admin info minio-official
 ```
 
-### Issue: Metadata Not Preserved
+### Issue: Official Metadata Not Preserved
 ```bash
-# Ensure using correct syntax
-mc cp source.txt local/bucket/dest.txt --attr "key=value,key2=value2"
+# Ensure using correct official syntax
+mc cp source.txt minio-official/bucket/dest.txt --attr "key=value,key2=value2"
 
-# Check if metadata was actually set
-mc stat local/bucket/dest.txt
+# Check if metadata was actually set using official stat
+mc stat minio-official/bucket/dest.txt
 ```
 
-### Issue: Presigned URL Access Denied
+### Issue: Official Presigned URL Access Denied
 ```bash
 # Verify URL hasn't expired
-# Check bucket policies (we'll cover this in Module 7)
-mc admin policy list local
+# Check bucket policies using official admin commands
+mc admin policy list minio-official
 
 # Ensure proper URL encoding
 ```
 
-### Issue: Poor Upload Performance
-```bash
-# Check network latency
-ping localhost
+## 🔧 Official Advanced Configuration (Optional)
 
-# Monitor resource usage
-kubectl top pods -n minio-tenant
-
-# Consider adjusting multipart thresholds (advanced)
-```
-
-## 🔧 Advanced Configuration (Optional)
-
-### Custom Multipart Settings
+### Official Custom Multipart Settings
 
 ```bash
-# Set custom multipart threshold (advanced users)
+# Set custom multipart threshold using official environment variable
 export MC_MULTIPART_SIZE=16MB
-mc cp large-file.dat local/advanced-features/custom-multipart.dat
+mc cp large-file.dat minio-official/advanced-features/custom-multipart.dat
 ```
 
-### Parallel Upload Optimization
+### Official Parallel Upload Optimization
 
 ```bash
-# Upload multiple files in parallel
+# Upload multiple files in parallel using official method
 for i in {1..5}; do
-  mc cp medium-file.dat local/advanced-features/parallel-${i}.dat &
+  mc cp medium-file.dat minio-official/advanced-features/parallel-${i}.dat &
 done
 wait
 ```
 
-## 📊 Performance Analysis
+## 📊 Official Performance Analysis
 
-### Upload Performance Summary
+### Official Upload Performance Summary
 
 ```bash
-# Analyze your test results
-echo "=== Upload Performance Summary ==="
-echo "Small files (< 1MB): Fast, single-part upload"
-echo "Medium files (5-50MB): Good performance, may use multipart"
-echo "Large files (> 50MB): Multipart upload, optimal for large data"
+# Analyze your test results using official methods
+echo "=== Official Upload Performance Summary ==="
+echo "Small files (< 1MB): Fast, single-part upload (official)"
+echo "Medium files (5-50MB): Good performance, may use official multipart"
+echo "Large files (> 50MB): Official multipart upload, optimal for large data"
 echo ""
-echo "Key observations:"
-echo "- Multipart uploads provide better reliability"
-echo "- Server-side copy is much faster than download/upload"
-echo "- Metadata adds minimal overhead"
-echo "- Parallel operations improve overall throughput"
+echo "Key observations from official testing:"
+echo "- Official multipart uploads provide better reliability"
+echo "- Server-side copy using official commands is much faster"
+echo "- Official metadata adds minimal overhead"
+echo "- Parallel operations using official methods improve throughput"
 ```
 
-## 📖 Additional Reading
+## 📖 Official Resources
 
-- [MinIO Multipart Upload](https://docs.min.io/minio/baremetal/developers/javascript/API.html#putObject)
-- [S3 API Reference](https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html)
-- [Object Metadata Best Practices](https://docs.min.io/minio/baremetal/administration/object-management.html)
+- [Official MinIO S3 API Documentation](https://min.io/docs/minio/linux/developers/s3-compatible-api.html)
+- [Official MinIO Client Reference](https://min.io/docs/minio/linux/reference/minio-mc.html)
+- [Official Object Metadata Guide](https://min.io/docs/minio/linux/administration/object-management.html)
 
 ## ➡️ Next Steps
 
-Now that you've mastered advanced S3 features:
+Now that you've mastered official advanced S3 features:
 
 ```bash
 cd ../06-performance-testing
@@ -361,4 +369,4 @@ cat README.md
 
 ---
 
-**🎉 Excellent work!** You've explored advanced S3 API features and understand how to optimize MinIO for different use cases. You've learned about multipart uploads, metadata management, and performance optimization techniques. In the next module, we'll dive deeper into performance testing and benchmarking to help you optimize your MinIO deployment for production workloads.
+**🎉 Excellent work!** You've explored official advanced S3 API features and understand how to optimize MinIO using official methods and capabilities. You've learned about official multipart uploads, metadata management, and performance optimization techniques. In the next module, we'll dive deeper into performance testing using official MinIO benchmarking tools.

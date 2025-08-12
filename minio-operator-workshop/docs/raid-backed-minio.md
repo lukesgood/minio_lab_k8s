@@ -147,7 +147,7 @@ metadata:
   namespace: minio-tenant
 spec:
   image: minio/minio:RELEASE.2025-04-08T15-41-24Z
-  credsSecret:
+  configuration:
     name: minio-creds-secret
   pools:
   - servers: 4

@@ -41,7 +41,7 @@ metadata:
   namespace: backup-system
 spec:
   image: minio/minio:RELEASE.2025-04-08T15-41-24Z
-  credsSecret:
+  configuration:
     name: backup-minio-creds
   pools:
   - servers: 1
@@ -59,6 +59,11 @@ spec:
         storageClassName: local-path
   mountPath: /export
   requestAutoCert: false
+  features:
+    bucketDNS: false
+    domains: {}
+  users:
+  - name: backup-user
 EOF
 
 # Create credentials for backup MinIO

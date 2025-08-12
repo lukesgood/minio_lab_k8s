@@ -3,26 +3,26 @@
 ## 🎯 Learning Objectives
 
 By the end of this module, you will:
-- Install and configure MinIO Client (mc)
-- Perform basic S3 operations (buckets, objects)
-- Understand data flow and storage verification
-- Verify data integrity and actual file locations
-- Master essential MinIO client commands
+- Install and configure MinIO Client (mc) using official methods
+- Perform basic S3 operations with official MinIO deployment
+- Understand data flow with official service endpoints
+- Verify data integrity using official MinIO client commands
+- Master essential MinIO client commands with official examples
 
 ## 📚 Key Concepts
 
-### MinIO Client (mc)
-The MinIO Client provides a modern alternative to UNIX commands like ls, cat, cp, mirror, diff, find etc. It supports filesystems and Amazon S3 compatible cloud storage services.
+### Official MinIO Client (mc)
+The MinIO Client provides a modern alternative to UNIX commands like ls, cat, cp, mirror, diff, find etc. It supports filesystems and Amazon S3 compatible cloud storage services, and is the official tool for interacting with MinIO.
 
-### S3 API Compatibility
-MinIO provides full compatibility with Amazon S3 APIs, making it a drop-in replacement for S3 in many applications.
+### Official S3 API Compatibility
+MinIO provides full compatibility with Amazon S3 APIs, making it a drop-in replacement for S3 in many applications, following official AWS S3 specifications.
 
 ## 📋 Step-by-Step Instructions
 
-### Step 1: Install MinIO Client
+### Step 1: Install Official MinIO Client
 
 ```bash
-# Download and install MinIO client
+# Download official MinIO client (latest stable)
 curl https://dl.min.io/client/mc/release/linux-amd64/mc \
   --create-dirs \
   -o $HOME/minio-binaries/mc
@@ -33,231 +33,246 @@ chmod +x $HOME/minio-binaries/mc
 # Add to PATH for this session
 export PATH=$PATH:$HOME/minio-binaries
 
-# Verify installation
+# Verify installation with official version check
 mc --version
 ```
 
 **Expected Output:**
 ```
-mc version RELEASE.2025-07-23T15-54-02Z
+mc version RELEASE.2024-10-08T09-37-26Z
 ```
 
-### Step 2: Configure MinIO Client
+### Step 2: Configure MinIO Client (Official Service Names)
 
 ```bash
-# Ensure port forwarding is active
-kubectl port-forward svc/minio -n minio-tenant 9000:80 &
+# Ensure port forwarding is active for official services
+kubectl port-forward svc/tenant-lite-hl -n tenant-lite 9000:9000 &
 
-# Configure mc to connect to our MinIO instance
-mc alias set local http://localhost:9000 admin password123
+# Configure mc to connect to our official MinIO instance
+mc alias set minio-official http://localhost:9000 minio minio123
 
-# Verify connection
-mc admin info local
+# Verify connection using official admin command
+mc admin info minio-official
 ```
 
 **Expected Output:**
 ```
 ●  localhost:9000
    Uptime: 5 minutes
-   Version: 2025-04-08T15:41:24Z
+   Version: 2024-10-02T17:50:41Z
    Network: 1/1 OK
    Drives: 4/4 OK
    Pool: 1
 ```
 
-### Step 3: Basic Bucket Operations
+### Step 3: Basic Bucket Operations (Official Commands)
 
 ```bash
 # List existing buckets (should be empty initially)
-mc ls local
+mc ls minio-official
 
-# Create a new bucket
-mc mb local/test-bucket
+# Create a new bucket using official naming conventions
+mc mb minio-official/test-bucket
 
 # Create additional buckets for testing
-mc mb local/documents
-mc mb local/images
+mc mb minio-official/documents
+mc mb minio-official/images
 
 # List buckets again
-mc ls local
+mc ls minio-official
 ```
 
 **Expected Output:**
 ```
-[2025-08-11 23:55:00 UTC]     0B documents/
-[2025-08-11 23:55:00 UTC]     0B images/
-[2025-08-11 23:55:00 UTC]     0B test-bucket/
+[2025-08-12 04:44:00 UTC]     0B documents/
+[2025-08-12 04:44:00 UTC]     0B images/
+[2025-08-12 04:44:00 UTC]     0B test-bucket/
 ```
 
 ### Step 4: Basic Object Operations
 
 ```bash
 # Create test files
-echo "Hello MinIO Workshop!" > test-file.txt
+echo "Hello Official MinIO Workshop!" > test-file.txt
 echo "This is a sample document" > document.txt
 dd if=/dev/zero of=large-file.dat bs=1M count=5
 
-# Upload files to buckets
-mc cp test-file.txt local/test-bucket/
-mc cp document.txt local/documents/
-mc cp large-file.dat local/test-bucket/
+# Upload files to buckets using official commands
+mc cp test-file.txt minio-official/test-bucket/
+mc cp document.txt minio-official/documents/
+mc cp large-file.dat minio-official/test-bucket/
 
 # List objects in buckets
-mc ls local/test-bucket/
-mc ls local/documents/
+mc ls minio-official/test-bucket/
+mc ls minio-official/documents/
 ```
 
-### Step 5: Verify Data Integrity
+### Step 5: Verify Data Integrity (Official Verification)
 
 ```bash
-# Download files and compare
-mc cp local/test-bucket/test-file.txt downloaded-test-file.txt
-mc cp local/documents/document.txt downloaded-document.txt
+# Download files and compare using official commands
+mc cp minio-official/test-bucket/test-file.txt downloaded-test-file.txt
+mc cp minio-official/documents/document.txt downloaded-document.txt
 
 # Compare original and downloaded files
 diff test-file.txt downloaded-test-file.txt
 diff document.txt downloaded-document.txt
 
-# Check file sizes
-ls -lh test-file.txt downloaded-test-file.txt
-ls -lh large-file.dat
-mc ls local/test-bucket/large-file.dat
+# Check file sizes using official stat command
+mc stat minio-official/test-bucket/test-file.txt
+mc stat minio-official/test-bucket/large-file.dat
 ```
 
-### Step 6: Explore Object Metadata
+### Step 6: Explore Object Metadata (Official Commands)
 
 ```bash
-# Get detailed object information
-mc stat local/test-bucket/test-file.txt
-mc stat local/test-bucket/large-file.dat
+# Get detailed object information using official stat command
+mc stat minio-official/test-bucket/test-file.txt
+mc stat minio-official/test-bucket/large-file.dat
 
 # List objects with detailed information
-mc ls --recursive local/
+mc ls --recursive minio-official/
 ```
 
 **Expected Output:**
 ```
 Name      : test-file.txt
-Date      : 2025-08-11 23:55:00 UTC
-Size      : 22 B
+Date      : 2025-08-12 04:44:00 UTC
+Size      : 30 B
 ETag      : 9bb58f26192e4ba00f01e2e7b136bbd8
 Type      : file
 Metadata  :
   Content-Type: text/plain
 ```
 
-### Step 7: Verify Actual Storage Locations
+### Step 7: Verify Actual Storage Locations (Official Structure)
 
-Now let's see where the data is actually stored on the filesystem:
+Now let's see where the data is actually stored using official tenant structure:
 
 ```bash
-# Check MinIO's internal directory structure
-kubectl exec -n minio-tenant minio-pool-0-0 -- find /export -name "*.txt" -o -name "*.dat" 2>/dev/null
+# Check MinIO's official internal directory structure
+kubectl exec -n tenant-lite tenant-lite-pool-0-0 -- find /export -name "*.txt" -o -name "*.dat" 2>/dev/null
 
-# Look at the erasure coding structure
-kubectl exec -n minio-tenant minio-pool-0-0 -- ls -la /export/data1/
-kubectl exec -n minio-tenant minio-pool-0-0 -- ls -la /export/data2/
+# Look at the official erasure coding structure
+kubectl exec -n tenant-lite tenant-lite-pool-0-0 -- ls -la /export/data1/
+kubectl exec -n tenant-lite tenant-lite-pool-0-0 -- ls -la /export/data2/
 
-# Check bucket directories
-kubectl exec -n minio-tenant minio-pool-0-0 -- find /export -type d -name "*test-bucket*"
+# Check official bucket directories
+kubectl exec -n tenant-lite tenant-lite-pool-0-0 -- find /export -type d -name "*test-bucket*"
 ```
 
-### Step 8: Understanding Erasure Coding Storage
+### Step 8: Understanding Official Erasure Coding Storage
 
 ```bash
-# MinIO splits files across multiple drives using erasure coding
-# Let's see how our files are distributed
+# MinIO splits files across multiple drives using official erasure coding
+# Let's see how our files are distributed in the official structure
 
-# Check each data directory for our bucket
+# Check each official data directory for our bucket
 for i in {1..4}; do
-  echo "=== Data directory $i ==="
-  kubectl exec -n minio-tenant minio-pool-0-0 -- ls -la /export/data${i}/ 2>/dev/null || echo "Directory not accessible"
+  echo "=== Official Data directory $i ==="
+  kubectl exec -n tenant-lite tenant-lite-pool-0-0 -- ls -la /export/data${i}/ 2>/dev/null || echo "Directory not accessible"
 done
 
-# Look for MinIO's internal file structure
-kubectl exec -n minio-tenant minio-pool-0-0 -- find /export -type f -name "xl.meta" | head -5
+# Look for MinIO's official internal file structure
+kubectl exec -n tenant-lite tenant-lite-pool-0-0 -- find /export -type f -name "xl.meta" | head -5
 ```
 
-### Step 9: Advanced Object Operations
+### Step 9: Advanced Object Operations (Official Commands)
 
 ```bash
-# Copy objects within MinIO
-mc cp local/test-bucket/test-file.txt local/documents/copied-file.txt
+# Copy objects within MinIO using official commands
+mc cp minio-official/test-bucket/test-file.txt minio-official/documents/copied-file.txt
 
-# Mirror a directory to MinIO
+# Mirror a directory to MinIO using official mirror command
 mkdir local-docs
 echo "Local document 1" > local-docs/doc1.txt
 echo "Local document 2" > local-docs/doc2.txt
-mc mirror local-docs/ local/documents/local-docs/
+mc mirror local-docs/ minio-official/documents/local-docs/
 
-# Sync files (like rsync)
+# Sync files using official mirror command (like rsync)
 echo "Updated content" > local-docs/doc1.txt
-mc mirror local-docs/ local/documents/local-docs/
+mc mirror local-docs/ minio-official/documents/local-docs/
 
-# List all objects recursively
-mc ls --recursive local/
+# List all objects recursively using official command
+mc ls --recursive minio-official/
 ```
 
-### Step 10: Object Versioning and Metadata
+### Step 10: Object Versioning and Metadata (Official Features)
 
 ```bash
-# Set custom metadata
-mc cp test-file.txt local/test-bucket/metadata-test.txt \
-  --attr "Author=Workshop,Department=Engineering,Project=MinIO-Lab"
+# Set custom metadata using official attr parameter
+mc cp test-file.txt minio-official/test-bucket/metadata-test.txt \
+  --attr "Author=Workshop,Department=Engineering,Project=MinIO-Official-Lab"
 
-# View object with metadata
-mc stat local/test-bucket/metadata-test.txt
+# View object with metadata using official stat command
+mc stat minio-official/test-bucket/metadata-test.txt
 
-# Create multiple versions of the same object
+# Create multiple versions of the same object (official versioning)
 echo "Version 1" > version-test.txt
-mc cp version-test.txt local/test-bucket/
+mc cp version-test.txt minio-official/test-bucket/
 
 echo "Version 2" > version-test.txt
-mc cp version-test.txt local/test-bucket/
+mc cp version-test.txt minio-official/test-bucket/
 
-# Check object information
-mc stat local/test-bucket/version-test.txt
+# Check object information using official commands
+mc stat minio-official/test-bucket/version-test.txt
 ```
 
-## 🔍 Understanding the Results
+### Step 11: Official Health and Performance Checks
 
-### Data Flow Architecture
+```bash
+# Use official admin commands to check cluster health
+mc admin info minio-official
+
+# Run official performance test
+mc admin speedtest minio-official --duration=30s
+
+# Check official server configuration
+mc admin config get minio-official
+
+# View official server logs
+mc admin logs minio-official
+```
+
+## 🔍 Understanding the Official Results
+
+### Official Data Flow Architecture
 
 ```
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   mc client │───▶│  Port Fwd   │───▶│ MinIO API   │───▶│ StatefulSet │
-│             │    │ :9000       │    │ Service     │    │ Pod         │
+│   mc client │───▶│  Port Fwd   │───▶│ Official    │───▶│ Official    │
+│  (official) │    │ :9000       │    │ MinIO API   │    │ StatefulSet │
 └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
                                                                  │
                                                                  ▼
                                                     ┌─────────────────────┐
-                                                    │ Erasure Coded       │
-                                                    │ Storage             │
+                                                    │ Official Erasure    │
+                                                    │ Coded Storage       │
                                                     │ /export/data1-4/    │
                                                     └─────────────────────┘
 ```
 
-### Erasure Coding in Action
+### Official Erasure Coding in Action
 
-With EC:2 configuration:
-- Files are split into data and parity chunks
-- Distributed across 4 drives
-- Can recover from 2 drive failures
-- Storage efficiency: ~50%
+With EC:2 configuration (official default for 4 drives):
+- Files are split into data and parity chunks using official algorithm
+- Distributed across 4 drives following official layout
+- Can recover from 2 drive failures (official tolerance)
+- Storage efficiency: ~50% (official calculation)
 
-### File Storage Structure
+### Official File Storage Structure
 
 ```
-/export/
-├── data1/
+/export/ (official mount path)
+├── data1/ (official drive 1)
+│   ├── .minio.sys/ (official system data)
+│   └── test-bucket/ (official bucket structure)
+├── data2/ (official drive 2)
 │   ├── .minio.sys/
 │   └── test-bucket/
-├── data2/
-│   ├── .minio.sys/
+├── data3/ (official drive 3)
 │   └── test-bucket/
-├── data3/
-│   └── test-bucket/
-└── data4/
+└── data4/ (official drive 4)
     └── test-bucket/
 ```
 
@@ -265,98 +280,94 @@ With EC:2 configuration:
 
 Before proceeding to Module 5, ensure:
 
-- [ ] MinIO client (mc) is installed and working
-- [ ] Successfully connected to MinIO instance
-- [ ] Created buckets and uploaded objects
+- [ ] Official MinIO client (mc) is installed and working
+- [ ] Successfully connected to official MinIO instance
+- [ ] Created buckets and uploaded objects using official commands
 - [ ] Verified data integrity (download matches upload)
-- [ ] Explored object metadata and properties
-- [ ] Understood erasure coding storage distribution
-- [ ] Performed advanced operations (copy, mirror, sync)
+- [ ] Explored object metadata using official stat command
+- [ ] Understood official erasure coding storage distribution
+- [ ] Performed advanced operations (copy, mirror, sync) with official commands
+- [ ] Used official admin commands for health checks
 
 ## 🚨 Common Issues & Solutions
 
-### Issue: mc Connection Fails
+### Issue: Official mc Connection Fails
 ```bash
-# Check port forwarding is active
-ps aux | grep "kubectl port-forward"
+# Check port forwarding is active for official service
+ps aux | grep "kubectl port-forward.*tenant-lite-hl"
 
 # Restart port forwarding if needed
-pkill -f "kubectl port-forward"
-kubectl port-forward svc/minio -n minio-tenant 9000:80 &
+pkill -f "kubectl port-forward.*tenant-lite"
+kubectl port-forward svc/tenant-lite-hl -n tenant-lite 9000:9000 &
 
-# Test connection
+# Test connection using official health endpoint
 curl -I http://localhost:9000/minio/health/live
 ```
 
-### Issue: Permission Denied on Upload
+### Issue: Permission Denied with Official Credentials
 ```bash
-# Verify credentials are correct
-mc admin info local
+# Verify official credentials are correct
+mc admin info minio-official
 
-# Check bucket policies (should be empty for new buckets)
-mc admin policy list local
+# Check official secret format
+kubectl get secret tenant-lite-secret -n tenant-lite -o yaml
 ```
 
 ### Issue: Large File Upload Fails
 ```bash
-# Check available storage space
-kubectl exec -n minio-tenant minio-pool-0-0 -- df -h /export
+# Check available storage space in official tenant
+kubectl exec -n tenant-lite tenant-lite-pool-0-0 -- df -h /export
 
-# Check MinIO logs for errors
-kubectl logs -n minio-tenant minio-pool-0-0
+# Check official MinIO logs for errors
+kubectl logs -n tenant-lite tenant-lite-pool-0-0
 ```
 
-### Issue: Objects Not Found After Upload
-```bash
-# Check if upload actually completed
-mc ls local/test-bucket/ --recursive
+## 🔧 Advanced Operations
 
-# Verify MinIO is healthy
-mc admin info local
-```
-
-## 🔧 Advanced Operations (Optional)
-
-### Batch Operations
+### Official Batch Operations
 
 ```bash
-# Upload multiple files at once
-mc cp --recursive local-docs/ local/batch-upload/
+# Upload multiple files at once using official commands
+mc cp --recursive local-docs/ minio-official/batch-upload/
 
-# Remove objects
-mc rm local/test-bucket/large-file.dat
-mc rm --recursive local/batch-upload/
+# Remove objects using official commands
+mc rm minio-official/test-bucket/large-file.dat
+mc rm --recursive minio-official/batch-upload/
 ```
 
-### Performance Testing
+### Official Performance Testing
 
 ```bash
-# Time large file operations
-time mc cp large-file.dat local/test-bucket/performance-test.dat
-time mc cp local/test-bucket/performance-test.dat downloaded-performance-test.dat
+# Time large file operations using official commands
+time mc cp large-file.dat minio-official/test-bucket/performance-test.dat
+time mc cp minio-official/test-bucket/performance-test.dat downloaded-performance-test.dat
 
-# Check transfer statistics
-mc stat local/test-bucket/performance-test.dat
+# Check transfer statistics using official stat
+mc stat minio-official/test-bucket/performance-test.dat
 ```
 
-### Bucket Policies (Preview)
+### Official Admin Operations
 
 ```bash
-# List current policies (should be empty)
-mc admin policy list local
+# List official policies (should be empty initially)
+mc admin policy list minio-official
 
-# We'll explore this more in Module 7
+# Check official server info
+mc admin info minio-official
+
+# View official configuration
+mc admin config get minio-official
 ```
 
-## 📖 Additional Reading
+## 📖 Official Resources
 
-- [MinIO Client Complete Guide](https://docs.min.io/minio/baremetal/reference/minio-mc.html)
-- [S3 API Compatibility](https://docs.min.io/minio/baremetal/reference/s3-api-compatibility.html)
-- [MinIO Erasure Coding](https://docs.min.io/minio/baremetal/concepts/erasure-coding.html)
+- [Official MinIO Client Guide](https://min.io/docs/minio/linux/reference/minio-mc.html)
+- [Official S3 API Compatibility](https://min.io/docs/minio/linux/developers/s3-compatible-api.html)
+- [Official MinIO Documentation](https://min.io/docs/minio/kubernetes/upstream/)
 
 ## ➡️ Next Steps
 
-Now that you've mastered basic MinIO operations:
+Now that you've mastered basic MinIO operations with official methods:
 
 ```bash
 cd ../05-advanced-s3
@@ -365,4 +376,4 @@ cat README.md
 
 ---
 
-**🎉 Fantastic!** You've successfully set up the MinIO client and performed essential object storage operations. You've seen how data flows from the client through Kubernetes services to the actual storage, and how MinIO's erasure coding protects your data. In the next module, we'll explore advanced S3 API features and performance optimization techniques.
+**🎉 Fantastic!** You've successfully set up the official MinIO client and performed essential object storage operations using official methods and commands. You've seen how data flows from the client through official Kubernetes services to the actual storage, and how MinIO's official erasure coding protects your data. In the next module, we'll explore advanced S3 API features using official MinIO capabilities.

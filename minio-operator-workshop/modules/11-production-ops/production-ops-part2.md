@@ -26,7 +26,7 @@ metadata:
   namespace: minio-tenant
 spec:
   image: minio/minio:RELEASE.2025-04-08T15-41-24Z
-  credsSecret:
+  configuration:
     name: minio-creds-secret
   pools:
   - servers: 1
@@ -44,6 +44,11 @@ spec:
         storageClassName: local-path
   mountPath: /export
   requestAutoCert: false
+  features:
+    bucketDNS: false
+    domains: {}
+  users:
+  - name: storage-user
   resources:
     requests:
       memory: "2Gi"

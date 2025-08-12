@@ -4,11 +4,13 @@ metadata:
   name: minio-tenant
   namespace: minio-tenant
 spec:
-  image: minio/minio:RELEASE.2024-01-16T16-07-38Z
+  image: minio/minio:RELEASE.2025-04-08T15-41-24Z
+  configuration:
+    name: minio-creds-secret
   pools:
   - servers: 1
     name: pool-0
-    volumesPerServer: 2
+    volumesPerServer: 4
     volumeClaimTemplate:
       metadata:
         name: data
@@ -17,9 +19,12 @@ spec:
         - ReadWriteOnce
         resources:
           requests:
-            storage: 2Gi
+            storage: 1Gi
         storageClassName: local-path
   mountPath: /export
-  configuration:
-    name: minio-creds-secret
   requestAutoCert: false
+  features:
+    bucketDNS: false
+    domains: {}
+  users:
+  - name: storage-user

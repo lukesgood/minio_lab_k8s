@@ -170,7 +170,7 @@ metadata:
   namespace: minio-secure
 spec:
   image: minio/minio:RELEASE.2025-04-08T15-41-24Z
-  credsSecret:
+  configuration:
     name: secure-minio-creds
   pools:
   - servers: 1
@@ -203,6 +203,11 @@ spec:
       runAsUser: 1000
   mountPath: /export
   requestAutoCert: false
+  features:
+    bucketDNS: false
+    domains: {}
+  users:
+  - name: secure-user
   resources:
     requests:
       memory: "1Gi"
